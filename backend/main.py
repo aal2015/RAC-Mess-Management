@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from api.routes import auth, admin, health
 from models.user import User
 from models.location import Location
+from models.meal_item import MealItem
+from models.meal_booking import MealBooking
 
 app = FastAPI(
     title="RAC Mess Management API",

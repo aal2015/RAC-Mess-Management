@@ -1,8 +1,11 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from api.deps import get_current_admin
 from core.database import get_db
+from models.meal_booking import MealBooking
 from core.security import hash_password
 from models.user import User
 from schemas.user import CreateUserRequest, UserResponse
@@ -10,6 +13,10 @@ from models.meal_item import MealItem
 from schemas.meal_item import (
     CreateMealItemRequest,
     MealItemResponse,
+)
+from schemas.meal_booking import (
+    CreateMealBookingsRequest,
+    MealBookingResponse,
 )
 
 
@@ -87,3 +94,104 @@ def create_meal_item(
     db.refresh(meal_item)
 
     return meal_item
+
+
+@router.post(
+    "/bookings",
+    response_model=list[MealBookingResponse],
+)
+def create_meal_bookings(
+    request: CreateMealBookingsRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    # Find user
+    booking_user = (
+        db.query(User)
+        .filter(User.username == request.username)
+        .first()
+    )
+
+    if not booking_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    if not booking_user.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="User is inactive",
+        )
+
+    # Find meal item
+    meal_item = db.get(MealItem, request.meal_item_id)
+
+    if not meal_item:
+        raise HTTPException(
+            status_code=404,
+            detail="Meal item not found",
+        )
+
+    if not request.dates:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one date is required",
+        )
+
+    dates = list(set(request.dates))
+    today = date.today()
+
+    # Reject past dates
+    if any(booking_date < today for booking_date in dates):
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot create bookings for past dates",
+        )
+
+    # Check existing bookings
+    existing = (
+        db.query(MealBooking)
+        .filter(
+            MealBooking.user_id == booking_user.id,
+            MealBooking.meal_type == request.meal_type,
+            MealBooking.book_date.in_(dates),
+        )
+        .all()
+    )
+
+    if existing:
+        existing_dates = [
+            booking.book_date.isoformat()
+            for booking in existing
+        ]
+
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": "Booking already exists for one or more dates",
+                "dates": existing_dates,
+            },
+        )
+
+    # Create bookings
+    bookings = []
+
+    for booking_date in dates:
+        booking = MealBooking(
+            user_id=booking_user.id,
+            meal_item_id=request.meal_item_id,
+            book_date=booking_date,
+            meal_type=request.meal_type,
+            status="booked",
+        )
+
+        db.add(booking)
+        bookings.append(booking)
+
+    db.commit()
+
+    for booking in bookings:
+        db.refresh(booking)
+
+    return bookings
