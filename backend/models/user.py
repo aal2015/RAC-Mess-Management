@@ -1,8 +1,14 @@
-import uuid
 from datetime import datetime
+from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import (
+    UUID as SQLAlchemyUUID,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    String,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import Base
@@ -11,9 +17,10 @@ from core.database import Base
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[UUID] = mapped_column(
+        SQLAlchemyUUID(as_uuid=True),
         primary_key=True,
+        default=uuid4,
     )
 
     username: Mapped[str] = mapped_column(
@@ -23,12 +30,13 @@ class User(Base):
     )
 
     password_hash: Mapped[str] = mapped_column(
-        Text,
+        String,
         nullable=False,
     )
 
-    location_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+    location_id: Mapped[UUID | None] = mapped_column(
+        SQLAlchemyUUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="SET NULL"),
         nullable=True,
     )
 
@@ -67,5 +75,5 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        server_default=func.now()
+        server_default=func.now(),
     )
