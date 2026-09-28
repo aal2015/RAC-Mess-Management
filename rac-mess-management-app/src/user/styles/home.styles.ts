@@ -134,4 +134,38 @@ export const styles = StyleSheet.create({
   logoutButton: {
     marginTop: 12,
   },
+
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+
+  statusText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  takenBadge: {
+    backgroundColor: "#DCFCE7",
+  },
+
+  takenText: {
+    color: "#166534",
+  },
+
+  pendingBadge: {
+    backgroundColor: "#E5E7EB",
+  },
+
+  pendingText: {
+    color: "#374151",
+  },
 });

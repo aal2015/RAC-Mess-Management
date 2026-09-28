@@ -38,6 +38,7 @@ export default function HomeScreen() {
             <MenuCard
               title="Today's Lunch"
               items="Dal, Rice, Roti, Sabzi, Curd"
+              status="Taken"
             />
           </View>
 
@@ -50,6 +51,7 @@ export default function HomeScreen() {
             <MenuCard
               title="Today's Dinner"
               items="Dal, Rice, Sabzi, Milk"
+              status="Pending"
             />
           </View>
         </View>
