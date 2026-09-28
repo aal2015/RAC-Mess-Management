@@ -1,9 +1,10 @@
 import { Redirect } from "expo-router";
-import { View, Text, Button } from "react-native";
+import { View, Text } from "react-native";
 import { useAuth } from "../auth/AuthContext";
+import HomeScreen from "../user/screens/HomeScreen";
 
 export default function Index() {
-  const { isLoading, isAuthenticated, logout } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
 
   if (isLoading) {
     return (
@@ -17,14 +18,5 @@ export default function Index() {
     return <Redirect href="/login" />;
   }
 
-  return (
-    <View>
-      <Text>RAC Mess Management</Text>
-
-      <Button
-        title="Logout"
-        onPress={logout}
-      />
-    </View>
-  );
+  return <HomeScreen />;
 }
