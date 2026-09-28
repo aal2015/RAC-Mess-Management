@@ -37,8 +37,17 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+  menuColumn: {
+    flexDirection: "column",
+  },
+
   menuCard: {
     flex: 1,
+  },
+
+  menuCardMobile: {
+    flex: 0,
+    width: "100%",
   },
 
   card: {

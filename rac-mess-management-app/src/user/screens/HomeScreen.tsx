@@ -1,4 +1,4 @@
-import { View, Text, Button } from "react-native";
+import { View, Text, Button, useWindowDimensions } from "react-native";
 import { useAuth } from "../../auth/AuthContext";
 import MenuCard from "../components/MenuCard";
 import BusCard from "../components/BusCard";
@@ -6,6 +6,9 @@ import { styles } from "../styles/home.styles";
 
 export default function HomeScreen() {
   const { logout } = useAuth();
+  const { width } = useWindowDimensions();
+
+  const isMobile = width < 768;
 
   return (
     <View style={styles.container}>
@@ -20,15 +23,30 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.content}>
-        <View style={styles.menuRow}>
-          <View style={styles.menuCard}>
+        <View
+          style={[
+            styles.menuRow,
+            isMobile && styles.menuColumn,
+          ]}
+        >
+          <View
+            style={[
+              styles.menuCard,
+              isMobile && styles.menuCardMobile,
+            ]}
+          >
             <MenuCard
               title="Today's Lunch"
               items="Dal, Rice, Roti, Sabzi, Curd"
             />
           </View>
 
-          <View style={styles.menuCard}>
+          <View
+            style={[
+              styles.menuCard,
+              isMobile && styles.menuCardMobile,
+            ]}
+          >
             <MenuCard
               title="Today's Dinner"
               items="Dal, Rice, Sabzi, Milk"
