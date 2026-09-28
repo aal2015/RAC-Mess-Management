@@ -1,17 +1,20 @@
+import { useState } from "react";
+import { Redirect, useRouter } from "expo-router";
 import {
   View,
   Text,
   TextInput,
-  Button,
+  Pressable,
+  useWindowDimensions,
 } from "react-native";
-import { useState } from "react";
-import { Redirect, useRouter } from "expo-router";
+import { styles } from "../styles/login.styles";
 
 import { useAuth } from "../auth/AuthContext";
 
 export default function Login() {
   const { login, isAuthenticated } = useAuth();
   const router = useRouter();
+  const { width } = useWindowDimensions();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -21,12 +24,12 @@ export default function Login() {
     return <Redirect href="/" />;
   }
 
+  const formWidth = width >= 768 ? Math.min(width * 0.5, 420) : width * 0.9;
+
   async function handleLogin() {
     try {
       setError("");
-
       await login(username, password);
-
       router.replace("/");
     } catch {
       setError("Invalid username or password");
@@ -34,29 +37,34 @@ export default function Login() {
   }
 
   return (
-    <View>
-      <Text>RAC Mess Management</Text>
+    <View style={styles.container}>
+      <View style={[styles.form, { width: formWidth }]}>
+        <Text style={styles.title}>RAC Mess Management</Text>
 
-      <TextInput
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Username"
+          placeholderTextColor="#888"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+        />
 
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#888"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-      {error ? <Text>{error}</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button
-        title="Login"
-        onPress={handleLogin}
-      />
+        <Pressable style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Login</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

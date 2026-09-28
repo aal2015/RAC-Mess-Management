@@ -4,7 +4,11 @@ import { AuthProvider } from "../auth/AuthContext";
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <Stack />
+      <Stack
+        screenOptions={{
+          headerTitleAlign: "center",
+        }}
+      />
     </AuthProvider>
   );
 }
