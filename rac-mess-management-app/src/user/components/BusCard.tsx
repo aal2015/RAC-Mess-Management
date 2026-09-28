@@ -17,11 +17,11 @@ export default function BusCard({
   const hasBus = busNumber && driverName;
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Your Bus</Text>
+    <>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Your Bus</Text>
 
-      {hasBus ? (
-        <>
+        {hasBus ? (
           <View style={styles.busInfo}>
             <View>
               <Text style={styles.busNumber}>{busNumber}</Text>
@@ -35,18 +35,20 @@ export default function BusCard({
               </Text>
             </View>
           </View>
+        ) : (
+          <Text style={styles.emptyText}>
+            No active bus route.
+          </Text>
+        )}
+      </View>
 
-          <Pressable style={styles.trackButton}>
-            <Text style={styles.trackButtonText}>
-              Track Bus
-            </Text>
-          </Pressable>
-        </>
-      ) : (
-        <Text style={styles.emptyText}>
-          No active bus route.
-        </Text>
+      {hasBus && (
+        <Pressable style={styles.trackButton}>
+          <Text style={styles.trackButtonText}>
+            Track Bus
+          </Text>
+        </Pressable>
       )}
-    </View>
+    </>
   );
 }

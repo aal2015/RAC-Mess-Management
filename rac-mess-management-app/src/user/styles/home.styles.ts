@@ -6,6 +6,10 @@ export const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
 
+  contentContainer: {
+    flexGrow: 1,
+  },
+
   header: {
     backgroundColor: "#0F2A4A",
     paddingHorizontal: 24,
@@ -123,6 +127,8 @@ export const styles = StyleSheet.create({
     backgroundColor: "#2563EB",
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 10,
+    marginBottom: 16,
   },
 
   trackButtonText: {
