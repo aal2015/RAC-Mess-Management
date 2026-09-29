@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import { styles } from "../styles/calendar.styles";
 
 type MealStatus = "full" | "partial" | "none";
@@ -49,6 +50,8 @@ export default function CalendarGrid({
     (_, index) => index
   );
 
+  const router = useRouter();
+
   return (
     <View style={styles.calendar}>
       <View style={styles.weekHeader}>
@@ -74,23 +77,27 @@ export default function CalendarGrid({
             day % 5 === 0
               ? "none"
               : day % 3 === 0
-              ? "partial"
-              : "full";
+                ? "partial"
+                : "full";
 
           return (
-            <View
+            <Pressable
               key={day}
               style={[
                 styles.dayBox,
-                {
-                  backgroundColor: getStatusColor(status),
-                },
+                { backgroundColor: getStatusColor(status) },
               ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/booking",
+                  params: {
+                    date: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+                  },
+                })
+              }
             >
-              <Text style={styles.dayNumber}>
-                {day}
-              </Text>
-            </View>
+              <Text style={styles.dayNumber}>{day}</Text>
+            </Pressable>
           );
         })}
       </View>
