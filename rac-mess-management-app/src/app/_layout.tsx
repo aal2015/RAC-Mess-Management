@@ -6,7 +6,7 @@ export default function RootLayout() {
     <AuthProvider>
       <Stack
         screenOptions={{
-          headerTitleAlign: "center",
+          headerShown: false,
         }}
       />
     </AuthProvider>
