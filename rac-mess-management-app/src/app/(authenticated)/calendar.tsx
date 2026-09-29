@@ -1,9 +1,10 @@
-import { View, Text } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { styles } from "../../user/styles/calendar.styles";
+import CalendarGrid from "../../user/components/CalendarGrid";
 
 export default function CalendarScreen() {
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Diet Calendar</Text>
 
@@ -13,10 +14,23 @@ export default function CalendarScreen() {
             </View>
 
             <View style={styles.content}>
-                <View style={styles.calendarPlaceholder}>
-                    <Text style={styles.placeholderText}>
-                        Calendar coming soon
-                    </Text>
+                <CalendarGrid month={8} year={2026} />
+
+                <View style={styles.legend}>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendBox, styles.fullMeal]} />
+                        <Text style={styles.legendText}>2 meals</Text>
+                    </View>
+
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendBox, styles.partialMeal]} />
+                        <Text style={styles.legendText}>1 meal</Text>
+                    </View>
+
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendBox, styles.noMeal]} />
+                        <Text style={styles.legendText}>0 meals</Text>
+                    </View>
                 </View>
 
                 <View style={styles.totalSection}>
@@ -29,6 +43,6 @@ export default function CalendarScreen() {
                     </Text>
                 </View>
             </View>
-        </View>
+        </ScrollView>
     );
 }
