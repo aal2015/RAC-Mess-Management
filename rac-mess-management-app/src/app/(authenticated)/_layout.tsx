@@ -5,7 +5,7 @@ export default function AuthenticatedLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,   // Hide the top header
+        headerShown: false,
         tabBarActiveTintColor: "#0F2A4A",
         tabBarInactiveTintColor: "#6B7280",
       }}
@@ -19,6 +19,7 @@ export default function AuthenticatedLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="calendar"
         options={{
@@ -28,6 +29,7 @@ export default function AuthenticatedLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="directory"
         options={{
@@ -37,6 +39,7 @@ export default function AuthenticatedLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="more"
         options={{
@@ -44,6 +47,13 @@ export default function AuthenticatedLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="menu" size={size} color={color} />
           ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="booking"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
