@@ -49,7 +49,7 @@ export function AuthProvider({
 
     await AsyncStorage.setItem(
       TOKEN_KEY,
-      data.access_token
+      JSON.stringify(data)
     );
 
     setAccessToken(data.access_token);
