@@ -4,7 +4,7 @@ import MenuCard from "../components/MenuCard";
 import BusCard from "../components/BusCard";
 import { styles } from "../styles/home.styles";
 
-export default function HomeScreen() {
+export default function UserHomeScreen() {
   const { logout } = useAuth();
   const { width } = useWindowDimensions();
 

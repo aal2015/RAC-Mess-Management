@@ -1,22 +1,13 @@
-import { Redirect } from "expo-router";
-import { View, Text } from "react-native";
 import { useAuth } from "../../auth/AuthContext";
-import HomeScreen from "../../user/screens/HomeScreen";
+import UserHomeScreen from "../../user/screens/UserHomeScreen";
+import AdminHomeScreen from "../../user/screens/AdminHomeScreen";
 
-export default function Index() {
-  const { isLoading, isAuthenticated } = useAuth();
+export default function HomeScreen() {
+  const { user } = useAuth();
 
-  if (isLoading) {
-    return (
-      <View>
-        <Text>Loading...</Text>
-      </View>
-    );
+  if (user?.role === "admin") {
+    return <AdminHomeScreen />;
   }
 
-  if (!isAuthenticated) {
-    return <Redirect href="/login" />;
-  }
-
-  return <HomeScreen />;
+  return <UserHomeScreen />;
 }
