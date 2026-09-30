@@ -9,5 +9,9 @@ export default function HomeScreen() {
     return <AdminHomeScreen />;
   }
 
-  return <UserHomeScreen />;
+  if (user?.role === "user") {
+    return <UserHomeScreen />;
+  }
+
+  return null;
 }
