@@ -98,7 +98,7 @@ export default function UserDetailScreen() {
 
         <Pressable
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.replace("/(authenticated)/users")}
         >
           <Text style={styles.backText}>
             Back
