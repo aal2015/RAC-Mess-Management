@@ -34,7 +34,14 @@ def login(
         user.role
     )
 
-    return TokenResponse(access_token=token)
+    return TokenResponse(
+        access_token=token,
+        username=user.username,
+        name=user.name,
+        role=user.role,
+        bus=user.bus,
+        battalion=user.battalion,
+    )
 
 
 @router.get("/me")
