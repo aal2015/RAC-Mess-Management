@@ -6,6 +6,7 @@ import {
   Pressable,
 } from "react-native";
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import { styles } from "../../user/styles/users.styles";
 
 const people = [
@@ -32,6 +33,8 @@ const people = [
 export default function UsersScreen() {
   const [search, setSearch] = useState("");
 
+  const router = useRouter();
+
   const filteredPeople = people.filter((person) =>
     `${person.name} ${person.phone}`
       .toLowerCase()
@@ -45,7 +48,10 @@ export default function UsersScreen() {
       </View>
 
       <View style={styles.content}>
-        <Pressable style={styles.addButton}>
+        <Pressable
+          style={styles.addButton}
+          onPress={() => router.push("./add-user")}
+        >
           <Text style={styles.addButtonText}>
             + Add User
           </Text>
