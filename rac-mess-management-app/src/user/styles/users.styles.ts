@@ -82,6 +82,12 @@ export const styles = StyleSheet.create({
         flex: 1,
     },
 
+    actionColumn: {
+        flex: 0.8,
+        alignItems: "center",
+        position: "relative",
+    },
+
     busColumn: {
         flex: 1,
     },
@@ -136,5 +142,63 @@ export const styles = StyleSheet.create({
         color: "#FFFFFF",
         fontSize: 15,
         fontWeight: "600",
+    },
+
+    errorText: {
+        textAlign: "center",
+        color: "#DC2626",
+        fontSize: 14,
+        marginTop: 24,
+    },
+
+    actionButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 8,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#F3F4F6",
+    },
+
+    actionButtonText: {
+        fontSize: 22,
+        fontWeight: "700",
+        color: "#374151",
+        lineHeight: 24,
+    },
+
+    actionMenu: {
+        position: "absolute",
+        top: 40,
+        right: 0,
+        width: 180,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        borderRadius: 8,
+        paddingVertical: 4,
+        zIndex: 1000,
+        elevation: 5,
+    },
+
+    menuItem: {
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+    },
+
+    menuText: {
+        fontSize: 14,
+        color: "#111827",
+    },
+
+    deleteText: {
+        fontSize: 14,
+        color: "#DC2626",
+        fontWeight: "600",
+    },
+
+    openRow: {
+        zIndex: 1000,
+        elevation: 10,
     },
 });

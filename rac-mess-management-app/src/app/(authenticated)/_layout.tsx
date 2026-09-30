@@ -101,6 +101,13 @@ export default function AuthenticatedLayout() {
           href: null,
         }}
       />
+
+      <Tabs.Screen
+        name="add-user"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
