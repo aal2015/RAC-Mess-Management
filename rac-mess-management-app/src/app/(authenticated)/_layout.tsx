@@ -85,6 +85,21 @@ export default function AuthenticatedLayout() {
       />
 
       <Tabs.Screen
+        name="meal-management"
+        options={{
+          href: isAdmin ? "/meal-management" : null,
+          title: "Meals",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons
+              name="restaurant"
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
         name="more"
         options={{
           title: "More",
