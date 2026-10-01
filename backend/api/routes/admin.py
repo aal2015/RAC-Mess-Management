@@ -78,23 +78,37 @@ def create_meal_item(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
     exists = (
         db.query(MealItem)
-        .filter(MealItem.item == request.item)
+        .filter(
+            MealItem.item == request.item.strip(),
+            MealItem.battalion == admin.battalion,
+        )
         .first()
     )
 
     if exists:
-        raise HTTPException(409, "Meal item already exists")
+        raise HTTPException(
+            status_code=409,
+            detail="Meal item already exists",
+        )
 
-    meal_item = MealItem(item=request.item.strip())
+    meal_item = MealItem(
+        item=request.item.strip(),
+        battalion=admin.battalion,
+    )
 
     db.add(meal_item)
     db.commit()
     db.refresh(meal_item)
 
     return meal_item
-
 
 @router.post(
     "/bookings",

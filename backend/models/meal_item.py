@@ -20,7 +20,11 @@ class MealItem(Base):
     item: Mapped[str] = mapped_column(
         String,
         nullable=False,
-        unique=True,
+    )
+
+    battalion: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
