@@ -4,129 +4,70 @@ import {
   TextInput,
   ScrollView,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+
+import { useAuth } from "../../auth/AuthContext";
+import {
+  getBattalionUsers,
+  UnauthorizedError,
+  type User,
+} from "../../api/admin";
+
 import { styles } from "../../user/styles/directory.styles";
 
-const people = [
-  {
-    name: "Raj Kumar",
-    phone: "9876543210",
-    role: "User",
-    bus: "Bus 02",
-  },
-  {
-    name: "Amit Singh",
-    phone: "9123456780",
-    role: "User",
-    bus: "Bus 01",
-  },
-  {
-    name: "Ramesh Singh",
-    phone: "9988776655",
-    role: "Driver",
-    bus: "Bus 02",
-  },
-  {
-    name: "Raj Kumar",
-    phone: "9876543210",
-    role: "User",
-    bus: "Bus 02",
-  },
-  {
-    name: "Amit Singh",
-    phone: "9123456780",
-    role: "User",
-    bus: "Bus 01",
-  },
-  {
-    name: "Ramesh Singh",
-    phone: "9988776655",
-    role: "Driver",
-    bus: "Bus 02",
-  },
-  {
-    name: "Raj Kumar",
-    phone: "9876543210",
-    role: "User",
-    bus: "Bus 02",
-  },
-  {
-    name: "Amit Singh",
-    phone: "9123456780",
-    role: "User",
-    bus: "Bus 01",
-  },
-  {
-    name: "Ramesh Singh",
-    phone: "9988776655",
-    role: "Driver",
-    bus: "Bus 02",
-  },
-  {
-    name: "Raj Kumar",
-    phone: "9876543210",
-    role: "User",
-    bus: "Bus 02",
-  },
-  {
-    name: "Amit Singh",
-    phone: "9123456780",
-    role: "User",
-    bus: "Bus 01",
-  },
-  {
-    name: "Ramesh Singh",
-    phone: "9988776655",
-    role: "Driver",
-    bus: "Bus 02",
-  },
-  {
-    name: "Raj Kumar",
-    phone: "9876543210",
-    role: "User",
-    bus: "Bus 02",
-  },
-  {
-    name: "Amit Singh",
-    phone: "9123456780",
-    role: "User",
-    bus: "Bus 01",
-  },
-  {
-    name: "Ramesh Singh",
-    phone: "9988776655",
-    role: "Driver",
-    bus: "Bus 02",
-  },
-  {
-    name: "Raj Kumar",
-    phone: "9876543210",
-    role: "User",
-    bus: "Bus 02",
-  },
-  {
-    name: "Amit Singh",
-    phone: "9123456780",
-    role: "User",
-    bus: "Bus 01",
-  },
-  {
-    name: "Ramesh Singh",
-    phone: "9988776655",
-    role: "Driver",
-    bus: "Bus 02",
-  },
-];
-
 export default function DirectoryScreen() {
+  const router = useRouter();
+
+  const { accessToken, logout } = useAuth();
+
+  const [people, setPeople] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const itemsPerPage = 10;
 
+  const loadPeople = useCallback(async () => {
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError("");
+
+      const data = await getBattalionUsers(accessToken);
+
+      setPeople(data);
+    } catch (error) {
+      if (error instanceof UnauthorizedError) {
+        await logout();
+        return;
+      }
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load directory."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [accessToken, logout]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPeople();
+    }, [loadPeople])
+  );
+
   const filteredPeople = people.filter((person) =>
-    `${person.name} ${person.phone}`
+    `${person.name} ${person.phone ?? ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
@@ -145,7 +86,9 @@ export default function DirectoryScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Personal Directory</Text>
+        <Text style={styles.title}>
+          Personal Directory
+        </Text>
       </View>
 
       <View style={styles.content}>
@@ -159,92 +102,154 @@ export default function DirectoryScreen() {
           }}
         />
 
-        <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, styles.nameColumn]}>
-              Name
-            </Text>
-
-            <Text style={[styles.headerCell, styles.phoneColumn]}>
-              Phone
-            </Text>
-
-            <Text style={[styles.headerCell, styles.roleColumn]}>
-              Role
-            </Text>
-
-            <Text style={[styles.headerCell, styles.busColumn]}>
-              Bus
-            </Text>
-          </View>
-
-          {paginatedPeople.map((person, index) => (
-            <View
-              key={`${person.name}-${person.phone}-${index}`}
-              style={styles.tableRow}
-            >
-              <Text style={[styles.cell, styles.nameColumn]}>
-                {person.name}
-              </Text>
-
-              <Text style={[styles.cell, styles.phoneColumn]}>
-                {person.phone}
-              </Text>
-
-              <Text style={[styles.cell, styles.roleColumn]}>
-                {person.role}
-              </Text>
-
-              <Text style={[styles.cell, styles.busColumn]}>
-                {person.bus}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        {filteredPeople.length === 0 && (
-          <Text style={styles.emptyText}>
-            No people found.
+        {isLoading ? (
+          <ActivityIndicator size="large" />
+        ) : error ? (
+          <Text style={styles.errorText}>
+            {error}
           </Text>
-        )}
+        ) : (
+          <>
+            <View style={styles.table}>
+              <View style={styles.tableHeader}>
+                <Text
+                  style={[
+                    styles.headerCell,
+                    styles.nameColumn,
+                  ]}
+                >
+                  Name
+                </Text>
 
-        {totalPages > 1 && (
-          <View style={styles.pagination}>
-            <Pressable
-              style={[
-                styles.pageButton,
-                currentPage === 1 && styles.disabledButton,
-              ]}
-              disabled={currentPage === 1}
-              onPress={() =>
-                setCurrentPage((page) => page - 1)
-              }
-            >
-              <Text style={styles.pageButtonText}>
-                Previous
+                <Text
+                  style={[
+                    styles.headerCell,
+                    styles.phoneColumn,
+                  ]}
+                >
+                  Phone
+                </Text>
+
+                <Text
+                  style={[
+                    styles.headerCell,
+                    styles.roleColumn,
+                  ]}
+                >
+                  Role
+                </Text>
+
+                <Text
+                  style={[
+                    styles.headerCell,
+                    styles.actionColumn,
+                  ]}
+                >
+                  View
+                </Text>
+              </View>
+
+              {paginatedPeople.map((person) => (
+                <View
+                  key={person.id}
+                  style={styles.tableRow}
+                >
+                  <Text
+                    style={[
+                      styles.cell,
+                      styles.nameColumn,
+                    ]}
+                  >
+                    {person.name}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.cell,
+                      styles.phoneColumn,
+                    ]}
+                  >
+                    {person.phone ?? "-"}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.cell,
+                      styles.roleColumn,
+                    ]}
+                  >
+                    {person.role}
+                  </Text>
+
+                  <View style={styles.actionColumn}>
+                    <Pressable
+                      onPress={() =>
+                        router.push({
+                          pathname:
+                            "/(authenticated)/user-detail/[id]",
+                          params: {
+                            id: person.id,
+                          },
+                        })
+                      }
+                    >
+                      <Text style={styles.viewText}>
+                        View
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {filteredPeople.length === 0 && (
+              <Text style={styles.emptyText}>
+                No people found.
               </Text>
-            </Pressable>
+            )}
 
-            <Text style={styles.pageInfo}>
-              Page {currentPage} of {totalPages}
-            </Text>
+            {totalPages > 1 && (
+              <View style={styles.pagination}>
+                <Pressable
+                  style={[
+                    styles.pageButton,
+                    currentPage === 1 &&
+                    styles.disabledButton,
+                  ]}
+                  disabled={currentPage === 1}
+                  onPress={() =>
+                    setCurrentPage((page) => page - 1)
+                  }
+                >
+                  <Text style={styles.pageButtonText}>
+                    Previous
+                  </Text>
+                </Pressable>
 
-            <Pressable
-              style={[
-                styles.pageButton,
-                currentPage === totalPages &&
-                  styles.disabledButton,
-              ]}
-              disabled={currentPage === totalPages}
-              onPress={() =>
-                setCurrentPage((page) => page + 1)
-              }
-            >
-              <Text style={styles.pageButtonText}>
-                Next
-              </Text>
-            </Pressable>
-          </View>
+                <Text style={styles.pageInfo}>
+                  Page {currentPage} of {totalPages}
+                </Text>
+
+                <Pressable
+                  style={[
+                    styles.pageButton,
+                    currentPage === totalPages &&
+                    styles.disabledButton,
+                  ]}
+                  disabled={
+                    currentPage === totalPages
+                  }
+                  onPress={() =>
+                    setCurrentPage((page) => page + 1)
+                  }
+                >
+                  <Text style={styles.pageButtonText}>
+                    Next
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+          </>
         )}
       </View>
     </ScrollView>

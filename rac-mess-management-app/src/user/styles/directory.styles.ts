@@ -82,10 +82,6 @@ export const styles = StyleSheet.create({
         flex: 1,
     },
 
-    busColumn: {
-        flex: 1,
-    },
-
     emptyText: {
         textAlign: "center",
         marginTop: 24,
@@ -121,5 +117,24 @@ export const styles = StyleSheet.create({
     pageInfo: {
         fontSize: 14,
         color: "#374151",
+    },
+
+    actionColumn: {
+        flex: 0.8,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+
+    viewText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#2563EB",
+    },
+
+    errorText: {
+        textAlign: "center",
+        color: "#DC2626",
+        fontSize: 14,
+        marginTop: 24,
     },
 });
