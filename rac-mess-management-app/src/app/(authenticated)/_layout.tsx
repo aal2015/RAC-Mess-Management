@@ -14,6 +14,8 @@ export default function AuthenticatedLayout() {
   }
 
   const isAdmin = user?.role === "admin";
+  const isUserOrDriver =
+    user?.role === "user" || user?.role === "driver";
 
   return (
     <Tabs
@@ -40,7 +42,7 @@ export default function AuthenticatedLayout() {
       <Tabs.Screen
         name="calendar"
         options={{
-          href: isAdmin ? null : "/calendar",
+          href: isUserOrDriver ? "/calendar" : null,
           title: "Calendar",
           tabBarIcon: ({ color, size }) => (
             <Ionicons
@@ -70,6 +72,7 @@ export default function AuthenticatedLayout() {
       <Tabs.Screen
         name="directory"
         options={{
+          href: isUserOrDriver ? "/directory" : null,
           title: "Directory",
           tabBarIcon: ({ color, size }) => (
             <Ionicons
