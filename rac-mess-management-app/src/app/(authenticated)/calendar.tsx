@@ -162,6 +162,11 @@ export default function CalendarScreen() {
                             month={month}
                             year={year}
                             bookings={bookingMap}
+                            username={
+                                user?.role === "admin"
+                                    ? username
+                                    : undefined
+                            }
                         />
 
                         <View style={styles.legend}>

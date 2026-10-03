@@ -13,7 +13,14 @@ type Booking = {
 type CalendarGridProps = {
   month: number;
   year: number;
-  bookings: Record<string, Booking>;
+  bookings: Record<
+    string,
+    {
+      lunch: boolean;
+      dinner: boolean;
+    }
+  >;
+  username?: string;
 };
 
 const weekDays = [
@@ -63,6 +70,7 @@ export default function CalendarGrid({
   month,
   year,
   bookings,
+  username,
 }: CalendarGridProps) {
   const router = useRouter();
 
@@ -133,14 +141,19 @@ export default function CalendarGrid({
                     getStatusColor(status),
                 },
               ]}
-              onPress={() =>
+              onPress={() => {
+                const booking = bookings[date];
+
                 router.push({
                   pathname: "/booking",
                   params: {
                     date,
+                    lunch: String(booking?.lunch ?? false),
+                    dinner: String(booking?.dinner ?? false),
+                    ...(username ? { username } : {}),
                   },
-                })
-              }
+                });
+              }}
             >
               <Text style={styles.dayNumber}>
                 {day}
