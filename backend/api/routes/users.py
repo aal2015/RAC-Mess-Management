@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -86,3 +88,61 @@ def get_meal_bookings(
     )
 
     return bookings
+
+@router.get(
+    "/bookings/{book_date}",
+    response_model=MealBookingResponse | None,
+)
+def get_meal_booking(
+    book_date: date,
+    username: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Admin: username is required
+    if current_user.role == "admin":
+        if not username:
+            raise HTTPException(
+                status_code=400,
+                detail="Username is required for admin",
+            )
+
+        booking_user = (
+            db.query(User)
+            .filter(User.username == username)
+            .first()
+        )
+
+        if not booking_user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found",
+            )
+
+        # Admin can only access users in the same battalion
+        if booking_user.battalion != current_user.battalion:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only access users in your battalion",
+            )
+
+    # Normal user: use token identity
+    elif current_user.role == "user":
+        booking_user = current_user
+
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to view meal bookings",
+        )
+
+    booking = (
+        db.query(MealBooking)
+        .filter(
+            MealBooking.user_id == booking_user.id,
+            MealBooking.book_date == book_date,
+        )
+        .first()
+    )
+
+    return booking
