@@ -6,19 +6,9 @@ from pydantic import BaseModel, field_validator
 
 class CreateMealBookingsRequest(BaseModel):
     username: str
-    meal_item_id: UUID
-    meal_type: str
     dates: list[date]
-
-    @field_validator("meal_type")
-    @classmethod
-    def validate_meal_type(cls, value: str):
-        if value not in ["breakfast", "lunch", "dinner"]:
-            raise ValueError(
-                "meal_type must be breakfast, lunch, or dinner"
-            )
-
-        return value
+    lunch: bool = False
+    dinner: bool = False
 
 class UpdateMealBookingRequest(BaseModel):
     status: str

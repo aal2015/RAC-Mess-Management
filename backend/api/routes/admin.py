@@ -119,7 +119,6 @@ def create_meal_bookings(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
-    # Find user
     booking_user = (
         db.query(User)
         .filter(User.username == request.username)
@@ -138,37 +137,31 @@ def create_meal_bookings(
             detail="User is inactive",
         )
 
-    # Find meal item
-    meal_item = db.get(MealItem, request.meal_item_id)
-
-    if not meal_item:
-        raise HTTPException(
-            status_code=404,
-            detail="Meal item not found",
-        )
-
     if not request.dates:
         raise HTTPException(
             status_code=400,
             detail="At least one date is required",
         )
 
+    if not request.lunch and not request.dinner:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one meal must be selected",
+        )
+
     dates = list(set(request.dates))
     today = date.today()
 
-    # Reject past dates
     if any(booking_date < today for booking_date in dates):
         raise HTTPException(
             status_code=400,
             detail="Cannot create bookings for past dates",
         )
 
-    # Check existing bookings
     existing = (
         db.query(MealBooking)
         .filter(
             MealBooking.user_id == booking_user.id,
-            MealBooking.meal_type == request.meal_type,
             MealBooking.book_date.in_(dates),
         )
         .all()
@@ -188,16 +181,14 @@ def create_meal_bookings(
             },
         )
 
-    # Create bookings
     bookings = []
 
     for booking_date in dates:
         booking = MealBooking(
             user_id=booking_user.id,
-            meal_item_id=request.meal_item_id,
             book_date=booking_date,
-            meal_type=request.meal_type,
-            status="booked",
+            lunch=request.lunch,
+            dinner=request.dinner,
         )
 
         db.add(booking)
