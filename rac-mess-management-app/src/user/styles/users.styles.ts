@@ -41,7 +41,7 @@ export const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#E5E7EB",
         borderRadius: 12,
-        overflow: "hidden",
+        overflow: "visible",
     },
 
     tableHeader: {
@@ -85,7 +85,9 @@ export const styles = StyleSheet.create({
     actionColumn: {
         flex: 0.8,
         alignItems: "center",
+        justifyContent: "center",
         position: "relative",
+        zIndex: 1000,
     },
 
     busColumn: {
@@ -177,8 +179,8 @@ export const styles = StyleSheet.create({
         borderColor: "#E5E7EB",
         borderRadius: 8,
         paddingVertical: 4,
-        zIndex: 1000,
-        elevation: 5,
+        zIndex: 2000,
+        elevation: 10,
     },
 
     menuItem: {
