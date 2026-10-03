@@ -150,4 +150,27 @@ export const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 24,
     },
+
+    initializeButton: {
+        width: "100%",
+        height: 48,
+        backgroundColor: "#2563EB",
+        borderRadius: 8,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 12,
+    },
+
+    initializeButtonText: {
+        color: "#FFFFFF",
+        fontSize: 15,
+        fontWeight: "600",
+    },
+
+    successText: {
+        fontSize: 14,
+        color: "#16A34A",
+        textAlign: "center",
+        marginBottom: 12,
+    },
 });

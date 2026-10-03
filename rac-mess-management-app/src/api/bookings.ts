@@ -89,3 +89,47 @@ export async function updateMealBooking(
 
   return response.json();
 }
+
+export async function createMealBookings(
+  accessToken: string,
+  username: string,
+  dates: string[],
+  lunch: boolean,
+  dinner: boolean
+): Promise<MealBooking[]> {
+  const response = await fetch(
+    `${API_URL}/admin/bookings`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "*/*",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        username,
+        dates,
+        lunch,
+        dinner,
+      }),
+    }
+  );
+
+  if (response.status === 401) {
+    throw new UnauthorizedError();
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(
+      () => null
+    );
+
+    throw new Error(
+      typeof errorData?.detail === "string"
+        ? errorData.detail
+        : "Failed to create meal bookings."
+    );
+  }
+
+  return response.json();
+}

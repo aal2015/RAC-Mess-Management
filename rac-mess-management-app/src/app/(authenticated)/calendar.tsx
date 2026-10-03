@@ -3,26 +3,21 @@ import {
     Text,
     ScrollView,
     ActivityIndicator,
+    Pressable
 } from "react-native";
-
 import { useCallback, useState } from "react";
-
 import {
     useFocusEffect,
     useLocalSearchParams,
 } from "expo-router";
-
 import { styles } from "../../user/styles/calendar.styles";
-
 import CalendarGrid from "../../user/components/CalendarGrid";
-
 import { useAuth } from "../../auth/AuthContext";
-
 import {
     getMealBookings,
+    createMealBookings,
     type MealBooking,
 } from "../../api/bookings";
-
 import { UnauthorizedError } from "../../api/admin";
 
 export default function CalendarScreen() {
@@ -40,8 +35,10 @@ export default function CalendarScreen() {
         MealBooking[]
     >([]);
 
-    console.log(bookings);
-
+    const [isInitializing, setIsInitializing] =
+        useState(false);
+    const [initializeMessage, setInitializeMessage] =
+        useState("");
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
@@ -128,6 +125,122 @@ export default function CalendarScreen() {
         0
     );
 
+    async function handleInitializeRemainingDates() {
+        if (
+            isInitializing ||
+            !accessToken ||
+            user?.role !== "admin" ||
+            !username
+        ) {
+            return;
+        }
+
+        setInitializeMessage("");
+        setError("");
+
+        try {
+            setIsInitializing(true);
+
+            // Dates already initialized in the backend
+            const existingDates = new Set(
+                bookings.map(
+                    (booking) => booking.book_date
+                )
+            );
+
+            const missingDates: string[] = [];
+
+            // Get today's date using local time
+            const today = new Date();
+
+            const todayString = `${today.getFullYear()}-${String(
+                today.getMonth() + 1
+            ).padStart(2, "0")}-${String(
+                today.getDate()
+            ).padStart(2, "0")}`;
+
+            const daysInMonth = new Date(
+                year,
+                month + 1,
+                0
+            ).getDate();
+
+            for (
+                let day = 1;
+                day <= daysInMonth;
+                day++
+            ) {
+                const currentDate = new Date(
+                    year,
+                    month,
+                    day
+                );
+
+                const dateString = `${year}-${String(
+                    month + 1
+                ).padStart(2, "0")}-${String(
+                    day
+                ).padStart(2, "0")}`;
+
+                const dayOfWeek =
+                    currentDate.getDay();
+
+                const isWeekend =
+                    dayOfWeek === 0 ||
+                    dayOfWeek === 6;
+
+                const isPast =
+                    dateString < todayString;
+
+                const alreadyInitialized =
+                    existingDates.has(dateString);
+
+                if (
+                    !isPast &&
+                    !isWeekend &&
+                    !alreadyInitialized
+                ) {
+                    missingDates.push(dateString);
+                }
+            }
+
+            if (missingDates.length === 0) {
+                setInitializeMessage(
+                    "No remaining dates need to be initialized."
+                );
+                return;
+            }
+
+            await createMealBookings(
+                accessToken,
+                username,
+                missingDates,
+                true,
+                true
+            );
+
+            setInitializeMessage(
+                `${missingDates.length} dates initialized successfully.`
+            );
+
+            // Refresh the calendar data
+            await loadBookings();
+        } catch (error) {
+            if (error instanceof UnauthorizedError) {
+                await logout();
+                return;
+            }
+
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to initialize remaining dates."
+            );
+        } finally {
+            setIsInitializing(false);
+        }
+    }
+
     return (
         <ScrollView
             style={styles.container}
@@ -158,6 +271,29 @@ export default function CalendarScreen() {
                     </Text>
                 ) : (
                     <>
+                        {user?.role === "admin" && (
+                            <>
+                                <Pressable
+                                    style={styles.initializeButton}
+                                    onPress={handleInitializeRemainingDates}
+                                    disabled={isInitializing}
+                                >
+                                    <Text
+                                        style={styles.initializeButtonText}
+                                    >
+                                        {isInitializing
+                                            ? "Initializing..."
+                                            : "Initialize Remaining Dates"}
+                                    </Text>
+                                </Pressable>
+
+                                {initializeMessage !== "" && (
+                                    <Text style={styles.successText}>
+                                        {initializeMessage}
+                                    </Text>
+                                )}
+                            </>
+                        )}
                         <CalendarGrid
                             month={month}
                             year={year}
