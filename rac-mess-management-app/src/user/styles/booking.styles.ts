@@ -100,4 +100,17 @@ export const styles = StyleSheet.create({
         color: "#6B7280",
         marginBottom: 16,
     },
+
+    errorText: {
+        color: '#d32f2f',
+        fontSize: 14,
+        marginTop: 8,
+        textAlign: 'center',
+    },
+
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });
