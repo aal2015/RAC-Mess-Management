@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, field_validator
@@ -26,10 +26,11 @@ class UpdateMealBookingRequest(BaseModel):
 class MealBookingResponse(BaseModel):
     id: UUID
     user_id: UUID
-    driver_id: UUID | None
     book_date: date
-    meal_type: str
-    meal_item_id: UUID
-    status: str
+    lunch: bool
+    dinner: bool
+    created_at: datetime
+    updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True
