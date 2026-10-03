@@ -11,17 +11,8 @@ class CreateMealBookingsRequest(BaseModel):
     dinner: bool = False
 
 class UpdateMealBookingRequest(BaseModel):
-    status: str
-
-    @field_validator("status")
-    @classmethod
-    def validate_status(cls, value: str):
-        if value not in ["booked", "cancelled"]:
-            raise ValueError(
-                "status must be booked or cancelled"
-            )
-
-        return value
+    lunch: bool = False
+    dinner: bool = False
 
 class MealBookingResponse(BaseModel):
     id: UUID

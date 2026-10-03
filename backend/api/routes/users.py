@@ -11,6 +11,7 @@ from schemas.user import UserResponse
 from schemas.meal_booking import (
     CreateMealBookingsRequest,
     MealBookingResponse,
+    UpdateMealBookingRequest
 )
 
 router = APIRouter(
@@ -144,5 +145,94 @@ def get_meal_booking(
         )
         .first()
     )
+
+    return booking
+
+@router.patch(
+    "/bookings/{book_date}",
+    response_model=MealBookingResponse,
+)
+def update_meal_booking(
+    book_date: date,
+    request: UpdateMealBookingRequest,
+    username: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Determine which user the booking belongs to
+    if current_user.role == "admin":
+        if not username:
+            raise HTTPException(
+                status_code=400,
+                detail="Username is required for admin",
+            )
+
+        booking_user = (
+            db.query(User)
+            .filter(User.username == username)
+            .first()
+        )
+
+        if not booking_user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found",
+            )
+
+        if booking_user.battalion != current_user.battalion:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only access users in your battalion",
+            )
+
+    elif current_user.role == "user":
+        booking_user = current_user
+
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to update meal bookings",
+        )
+
+    if book_date < date.today():
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot update bookings for past dates",
+        )
+
+    booking = (
+        db.query(MealBooking)
+        .filter(
+            MealBooking.user_id == booking_user.id,
+            MealBooking.book_date == book_date,
+        )
+        .first()
+    )
+
+    # Booking doesn't exist
+    if not booking:
+        if current_user.role != "admin":
+            raise HTTPException(
+                status_code=404,
+                detail="Booking not found",
+            )
+
+        # Admin is allowed to create it
+        booking = MealBooking(
+            user_id=booking_user.id,
+            book_date=book_date,
+            lunch=request.lunch,
+            dinner=request.dinner,
+        )
+
+        db.add(booking)
+
+    else:
+        # Existing booking → update it
+        booking.lunch = request.lunch
+        booking.dinner = request.dinner
+
+    db.commit()
+    db.refresh(booking)
 
     return booking
