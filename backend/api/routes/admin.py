@@ -35,7 +35,16 @@ def create_user(
     admin: User = Depends(get_current_admin)
 ):
     if request.role not in ["user", "driver"]:
-        raise HTTPException(400, "Role must be user or driver")
+        raise HTTPException(
+            status_code=400,
+            detail="Role must be user or driver"
+        )
+
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion"
+        )
 
     exists = (
         db.query(User)
@@ -44,22 +53,23 @@ def create_user(
     )
 
     if exists:
-        raise HTTPException(409, "Username already exists")
+        raise HTTPException(
+            status_code=409,
+            detail="Username already exists"
+        )
 
     user = User(
         username=request.username,
         password_hash=hash_password(request.password),
-
         name=request.name,
         phone=request.phone,
-
         role=request.role,
-
         location_id=request.location_id,
 
-        battalion=request.battalion,
-        bus=request.bus,
+        # Inferred from the authenticated admin
+        battalion=admin.battalion,
 
+        bus=request.bus,
         is_active=True
     )
 

@@ -4,15 +4,10 @@ from pydantic import BaseModel
 class CreateUserRequest(BaseModel):
     username: str
     password: str
-
     name: str
     phone: str | None = None
-
-    role: str          # user or driver
-
+    role: str
     location_id: UUID | None = None
-
-    battalion: str | None = None
     bus: str | None = None
 
 
