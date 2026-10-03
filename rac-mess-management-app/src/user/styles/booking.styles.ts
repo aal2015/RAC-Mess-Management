@@ -81,9 +81,9 @@ export const styles = StyleSheet.create({
     },
 
     confirmButton: {
-        backgroundColor: "#2563EB",
         height: 52,
         borderRadius: 8,
+        backgroundColor: "#2563EB",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -112,5 +112,31 @@ export const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+
+    buttonRow: {
+        flexDirection: "column",
+        gap: 12,
+    },
+
+    cancelButton: {
+        height: 52,
+        borderWidth: 1,
+        borderColor: "#D1D5DB",
+        borderRadius: 8,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    cancelText: {
+        color: "#374151",
+        fontSize: 16,
+        fontWeight: "600",
+    },
+
+    successText: {
+        fontSize: 14,
+        color: "#16A34A",
+        marginBottom: 16,
     },
 });
