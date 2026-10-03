@@ -5,10 +5,24 @@ import BusCard from "../components/BusCard";
 import { styles } from "../styles/home.styles";
 
 export default function UserHomeScreen() {
-  const { logout } = useAuth();
   const { width } = useWindowDimensions();
+  const { user, logout } = useAuth();
 
   const isMobile = width < 768;
+
+  function getGreeting() {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 12) {
+      return "Good Morning";
+    }
+
+    if (hour >= 12 && hour < 17) {
+      return "Good Afternoon";
+    }
+
+    return "Good Evening";
+  }
 
   return (
     <ScrollView
@@ -17,16 +31,16 @@ export default function UserHomeScreen() {
     >
       <View style={styles.header}>
         <Text style={styles.greeting}>
-          Good Afternoon, Raj
+          {getGreeting()}, {user?.name}
         </Text>
 
         <Text style={styles.userInfo}>
-          P001 • 11th RAC
+          {user?.username} • {user?.battalion ?? "-"}
         </Text>
       </View>
 
       <View style={styles.content}>
-        <View>
+        {/* <View>
           <MenuCard
             title="Today's Lunch"
             items="Dal, Rice, Roti, Sabzi, Curd"
@@ -38,7 +52,7 @@ export default function UserHomeScreen() {
             items="Dal, Rice, Sabzi, Milk"
             status="Pending"
           />
-        </View>
+        </View> */}
 
         <BusCard
           busNumber="Bus 02"
@@ -47,9 +61,9 @@ export default function UserHomeScreen() {
           startedAt="7:05 PM"
         />
 
-        <View style={styles.logoutButton}>
+        {/* <View style={styles.logoutButton}>
           <Button title="Logout" onPress={logout} />
-        </View>
+        </View> */}
       </View>
     </ScrollView>
   );

@@ -5,6 +5,20 @@ import { styles } from "../styles/adminHome.styles";
 export default function AdminHomeScreen() {
     const { user, logout } = useAuth();
 
+    function getGreeting() {
+        const hour = new Date().getHours();
+
+        if (hour >= 5 && hour < 12) {
+            return "Good Morning";
+        }
+
+        if (hour >= 12 && hour < 17) {
+            return "Good Afternoon";
+        }
+
+        return "Good Evening";
+    }
+
     return (
         <ScrollView
             style={styles.container}
@@ -12,7 +26,7 @@ export default function AdminHomeScreen() {
         >
             <View style={styles.header}>
                 <Text style={styles.greeting}>
-                    Good Afternoon, {user?.name}
+                    {getGreeting()}, {user?.name}
                 </Text>
 
                 <Text style={styles.userInfo}>
@@ -113,14 +127,14 @@ export default function AdminHomeScreen() {
                     </Pressable>
                 </View>
 
-                <Pressable
+                {/* <Pressable
                     style={styles.logoutButton}
                     onPress={logout}
                 >
                     <Text style={styles.logoutText}>
                         Logout
                     </Text>
-                </Pressable>
+                </Pressable> */}
             </View>
         </ScrollView>
     );
