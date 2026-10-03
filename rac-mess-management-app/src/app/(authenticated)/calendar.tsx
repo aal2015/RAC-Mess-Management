@@ -1,8 +1,17 @@
 import { View, Text, ScrollView } from "react-native";
 import { styles } from "../../user/styles/calendar.styles";
 import CalendarGrid from "../../user/components/CalendarGrid";
+import { useLocalSearchParams } from "expo-router";
 
 export default function CalendarScreen() {
+    const { userId } = useLocalSearchParams<
+        "/(authenticated)/calendar",
+        { userId?: string }
+    >();
+
+    console.log("User ID:", userId);
+
+    
     return (
         <ScrollView style={styles.container}>
             <View style={styles.header}>

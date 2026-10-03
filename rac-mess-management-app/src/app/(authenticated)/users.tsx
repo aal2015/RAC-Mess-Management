@@ -209,10 +209,12 @@ export default function UsersScreen() {
                           onPress={() => {
                             setOpenMenuId(null);
 
-                            console.log(
-                              "Meal management:",
-                              person.id
-                            );
+                            router.push({
+                              pathname: "/calendar",
+                              params: {
+                                userId: person.id,
+                              },
+                            });
                           }}
                         >
                           <Text style={styles.menuText}>
