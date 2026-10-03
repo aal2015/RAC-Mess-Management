@@ -6,6 +6,10 @@ export const styles = StyleSheet.create({
         backgroundColor: "#F8FAFC",
     },
 
+    contentContainer: {
+        flexGrow: 1,
+    },
+
     header: {
         backgroundColor: "#0F2A4A",
         paddingHorizontal: 24,
@@ -26,37 +30,9 @@ export const styles = StyleSheet.create({
 
     content: {
         width: "100%",
-        maxWidth: 1000,
+        maxWidth: 700,
         alignSelf: "center",
         padding: 24,
-    },
-
-    totalSection: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-
-        backgroundColor: "#FFFFFF",
-        borderWidth: 1,
-        borderColor: "#D1D5DB",
-        borderRadius: 12,
-
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-
-        marginTop: 24,
-    },
-
-    totalLabel: {
-        fontSize: 16,
-        fontWeight: "500",
-        color: "#374151",
-    },
-
-    totalValue: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: "#111827",
     },
 
     calendar: {
@@ -64,20 +40,21 @@ export const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#E5E7EB",
         borderRadius: 12,
-        padding: 12,
+        overflow: "hidden",
     },
 
     weekHeader: {
         flexDirection: "row",
-        marginBottom: 8,
+        backgroundColor: "#F3F4F6",
     },
 
     weekDay: {
-        flex: 1,
+        width: "14.2857%",
         textAlign: "center",
+        paddingVertical: 10,
         fontSize: 13,
         fontWeight: "600",
-        color: "#6B7280",
+        color: "#374151",
     },
 
     daysGrid: {
@@ -100,9 +77,9 @@ export const styles = StyleSheet.create({
     },
 
     dayNumber: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: "600",
-        color: "#374151",
+        color: "#111827",
     },
 
     legend: {
@@ -140,5 +117,37 @@ export const styles = StyleSheet.create({
     legendText: {
         fontSize: 13,
         color: "#374151",
+    },
+
+    totalSection: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#D1D5DB",
+        borderRadius: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        marginTop: 24,
+    },
+
+    totalLabel: {
+        fontSize: 16,
+        fontWeight: "500",
+        color: "#374151",
+    },
+
+    totalValue: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: "#111827",
+    },
+
+    errorText: {
+        textAlign: "center",
+        color: "#DC2626",
+        fontSize: 14,
+        marginTop: 24,
     },
 });

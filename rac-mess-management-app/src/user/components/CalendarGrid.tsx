@@ -1,17 +1,52 @@
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+
 import { styles } from "../styles/calendar.styles";
 
 type MealStatus = "full" | "partial" | "none";
 
-type CalendarGridProps = {
-  month: number; // 0 = January, 11 = December
-  year: number;
+type Booking = {
+  lunch: boolean;
+  dinner: boolean;
 };
 
-const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+type CalendarGridProps = {
+  month: number;
+  year: number;
+  bookings: Record<string, Booking>;
+};
 
-function getStatusColor(status: MealStatus) {
+const weekDays = [
+  "Sun",
+  "Mon",
+  "Tue",
+  "Wed",
+  "Thu",
+  "Fri",
+  "Sat",
+];
+
+function getStatus(
+  booking?: Booking
+): MealStatus {
+  if (!booking) {
+    return "none";
+  }
+
+  if (booking.lunch && booking.dinner) {
+    return "full";
+  }
+
+  if (booking.lunch || booking.dinner) {
+    return "partial";
+  }
+
+  return "none";
+}
+
+function getStatusColor(
+  status: MealStatus
+) {
   switch (status) {
     case "full":
       return "#DCFCE7";
@@ -27,7 +62,10 @@ function getStatusColor(status: MealStatus) {
 export default function CalendarGrid({
   month,
   year,
+  bookings,
 }: CalendarGridProps) {
+  const router = useRouter();
+
   const daysInMonth = new Date(
     year,
     month + 1,
@@ -50,13 +88,14 @@ export default function CalendarGrid({
     (_, index) => index
   );
 
-  const router = useRouter();
-
   return (
     <View style={styles.calendar}>
       <View style={styles.weekHeader}>
         {weekDays.map((day) => (
-          <Text key={day} style={styles.weekDay}>
+          <Text
+            key={day}
+            style={styles.weekDay}
+          >
             {day}
           </Text>
         ))}
@@ -71,32 +110,41 @@ export default function CalendarGrid({
         ))}
 
         {days.map((day) => {
-          // Temporary mock status.
-          // This will eventually come from the backend.
-          const status: MealStatus =
-            day % 5 === 0
-              ? "none"
-              : day % 3 === 0
-                ? "partial"
-                : "full";
+          const date = `${year}-${String(
+            month + 1
+          ).padStart(2, "0")}-${String(day).padStart(
+            2,
+            "0"
+          )}`;
+
+          const booking = bookings[date];
+
+          const status = getStatus(
+            booking
+          );
 
           return (
             <Pressable
               key={day}
               style={[
                 styles.dayBox,
-                { backgroundColor: getStatusColor(status) },
+                {
+                  backgroundColor:
+                    getStatusColor(status),
+                },
               ]}
               onPress={() =>
                 router.push({
                   pathname: "/booking",
                   params: {
-                    date: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+                    date,
                   },
                 })
               }
             >
-              <Text style={styles.dayNumber}>{day}</Text>
+              <Text style={styles.dayNumber}>
+                {day}
+              </Text>
             </Pressable>
           );
         })}

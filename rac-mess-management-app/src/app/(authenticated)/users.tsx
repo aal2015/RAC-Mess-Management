@@ -213,6 +213,7 @@ export default function UsersScreen() {
                               pathname: "/calendar",
                               params: {
                                 userId: person.id,
+                                username: person.username,
                               },
                             });
                           }}
