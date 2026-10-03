@@ -223,7 +223,7 @@ export default function UsersScreen() {
                           </Text>
                         </Pressable>
 
-                        <Pressable
+                        {/* <Pressable
                           style={styles.menuItem}
                           onPress={() => {
                             setOpenMenuId(null);
@@ -237,7 +237,7 @@ export default function UsersScreen() {
                           <Text style={styles.deleteText}>
                             Delete User
                           </Text>
-                        </Pressable>
+                        </Pressable> */}
                       </View>
                     )}
                   </View>

@@ -21,7 +21,6 @@ export default function AddUserScreen() {
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [role, setRole] = useState<Role>("user");
-    const [battalion, setBattalion] = useState("");
     const [bus, setBus] = useState("");
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,7 +59,6 @@ export default function AddUserScreen() {
                 name: name.trim(),
                 phone: phone.trim(),
                 role,
-                battalion: battalion.trim(),
                 bus: role === "driver" ? bus.trim() : null,
             });
 
@@ -163,14 +161,6 @@ export default function AddUserScreen() {
                             </Text>
                         </Pressable>
                     </View>
-
-                    <Text style={styles.label}>Battalion</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter battalion"
-                        value={battalion}
-                        onChangeText={setBattalion}
-                    />
 
                     {role === "driver" && (
                         <>

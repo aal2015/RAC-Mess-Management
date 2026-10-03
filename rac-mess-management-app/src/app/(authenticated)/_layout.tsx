@@ -133,10 +133,10 @@ export default function AuthenticatedLayout() {
                 size={size}
                 color={color}
               />
-            ),
+            ), href: null
           }}
         />
-
+        
         <Tabs.Screen
           name="booking"
           options={{ href: null }}
@@ -154,11 +154,12 @@ export default function AuthenticatedLayout() {
 
         <Tabs.Screen
           name="meal-management"
-          options={{
-            href: isAdmin
-              ? "/meal-management"
-              : null,
-          }}
+          // options={{
+          //   href: isAdmin
+          //     ? "/meal-management"
+          //     : null,
+          // }}
+          options={{ href: null }}
         />
 
         <Tabs.Screen

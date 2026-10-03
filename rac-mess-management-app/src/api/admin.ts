@@ -18,7 +18,6 @@ type CreateUserData = {
   name: string;
   phone: string;
   role: "user" | "driver";
-  battalion: string;
   bus: string | null;
 };
 
@@ -47,7 +46,6 @@ export async function createUser(
       phone: data.phone,
       role: data.role,
       location_id: null,
-      battalion: data.battalion,
       bus: data.bus,
     }),
   });
