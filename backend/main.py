@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import auth, admin, health, users
+from api.routes import auth, admin, health, users, maintainer
 from models.user import User
 from models.location import Location
 from models.meal_item import MealItem
 from models.meal_booking import MealBooking
+from models.battalion import Battalion
 
 app = FastAPI(
     title="RAC Mess Management API",
@@ -24,3 +25,4 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(users.router)
+app.include_router(maintainer.router)
