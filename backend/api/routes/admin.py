@@ -19,6 +19,11 @@ from schemas.meal_booking import (
     MealBookingResponse,
     CancelUserBookingRequest
 )
+from models.location import Location
+from schemas.location import (
+    CreateLocationRequest,
+    LocationResponse,
+)
 
 
 router = APIRouter(
@@ -259,3 +264,24 @@ def cancel_user_booking(
         "username": request.username,
         "book_date": request.book_date,
     }
+
+@router.post(
+    "/locations",
+    response_model=LocationResponse,
+)
+def create_location(
+    request: CreateLocationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    location = Location(
+        latitude=request.latitude,
+        longitude=request.longitude,
+        road_name=request.road_name,
+    )
+
+    db.add(location)
+    db.commit()
+    db.refresh(location)
+
+    return location

@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import UUID as SQLAlchemyUUID
-from sqlalchemy import DateTime, String, Float, func
+from sqlalchemy import DateTime, Float, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import Base
@@ -27,7 +27,7 @@ class Location(Base):
         nullable=False,
     )
 
-    landmark: Mapped[str | None] = mapped_column(
+    road_name: Mapped[str | None] = mapped_column(
         String,
         nullable=True,
     )
