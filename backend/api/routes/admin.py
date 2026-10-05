@@ -17,6 +17,7 @@ from schemas.meal_item import (
 from schemas.meal_booking import (
     CreateMealBookingsRequest,
     MealBookingResponse,
+    CancelUserBookingRequest
 )
 
 
@@ -210,3 +211,51 @@ def create_meal_bookings(
         db.refresh(booking)
 
     return bookings
+
+@router.delete("/bookings")
+def cancel_user_booking(
+    request: CancelUserBookingRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    booking_user = (
+        db.query(User)
+        .filter(User.username == request.username)
+        .first()
+    )
+
+    if not booking_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    if booking_user.battalion != admin.battalion:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only access users in your battalion",
+        )
+
+    booking = (
+        db.query(MealBooking)
+        .filter(
+            MealBooking.user_id == booking_user.id,
+            MealBooking.book_date == request.book_date,
+        )
+        .first()
+    )
+
+    if not booking:
+        raise HTTPException(
+            status_code=404,
+            detail="Booking not found",
+        )
+
+    db.delete(booking)
+    db.commit()
+
+    return {
+        "message": "Booking cancelled successfully",
+        "username": request.username,
+        "book_date": request.book_date,
+    }

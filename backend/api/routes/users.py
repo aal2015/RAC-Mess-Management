@@ -19,7 +19,6 @@ router = APIRouter(
     tags=["Users"],
 )
 
-
 @router.get("/battalion", response_model=list[UserResponse])
 def get_battalion_users(
     db: Session = Depends(get_db),

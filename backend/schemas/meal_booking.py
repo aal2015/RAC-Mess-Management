@@ -25,3 +25,7 @@ class MealBookingResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CancelUserBookingRequest(BaseModel):
+    username: str
+    book_date: date
