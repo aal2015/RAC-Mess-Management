@@ -44,4 +44,8 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 8,
   },
+
+  buttonDisabled: {
+    opacity: 0.7,
+  },
 });

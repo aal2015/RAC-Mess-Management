@@ -6,6 +6,7 @@ import {
   TextInput,
   Pressable,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import { styles } from "../styles/login.styles";
 
@@ -19,20 +20,38 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   if (isAuthenticated) {
     return <Redirect href="/" />;
   }
 
-  const formWidth = width >= 768 ? Math.min(width * 0.5, 420) : width * 0.9;
+  const formWidth =
+    width >= 768 ? Math.min(width * 0.5, 420) : width * 0.9;
 
   async function handleLogin() {
+    if (isLoggingIn) return;
+
     try {
       setError("");
+      setIsLoggingIn(true);
+
       await login(username, password);
+
       router.replace("/");
-    } catch {
-      setError("Invalid username or password");
+    } catch (error: any) {
+      if (
+        error?.message === "Network Error" ||
+        error?.code === "ERR_NETWORK"
+      ) {
+        setError("Unable to connect to the server. Please try again.");
+      } else if (error?.response?.status === 401) {
+        setError("Invalid username or password.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setIsLoggingIn(false);
     }
   }
 
@@ -48,6 +67,7 @@ export default function Login() {
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
+          editable={!isLoggingIn}
         />
 
         <TextInput
@@ -57,12 +77,24 @@ export default function Login() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          editable={!isLoggingIn}
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Pressable style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Login</Text>
+        <Pressable
+          style={[
+            styles.button,
+            isLoggingIn && styles.buttonDisabled,
+          ]}
+          onPress={handleLogin}
+          disabled={isLoggingIn}
+        >
+          {isLoggingIn ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>Login</Text>
+          )}
         </Pressable>
       </View>
     </View>
