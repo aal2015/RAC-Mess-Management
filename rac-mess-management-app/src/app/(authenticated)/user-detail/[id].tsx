@@ -9,6 +9,7 @@ import {
   useRouter,
 } from "expo-router";
 import { useEffect, useState } from "react";
+import LogoutButton from "../../../components/LogoutButton";
 
 import { useAuth } from "../../../auth/AuthContext";
 import {
@@ -62,6 +63,8 @@ export default function UserDetailScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>User Details</Text>
+
+        <LogoutButton />
       </View>
 
       <View style={styles.content}>

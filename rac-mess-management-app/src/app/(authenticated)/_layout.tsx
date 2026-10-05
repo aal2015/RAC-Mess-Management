@@ -31,7 +31,7 @@ export default function AuthenticatedLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={styles.logoutBar}>
+      {/* <View style={styles.logoutBar}>
         <View />
 
         <Pressable
@@ -49,7 +49,7 @@ export default function AuthenticatedLayout() {
             Logout
           </Text>
         </Pressable>
-      </View>
+      </View> */}
 
       <Tabs
         screenOptions={{

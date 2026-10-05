@@ -1,6 +1,6 @@
 import { View, Text, Button, useWindowDimensions, ScrollView } from "react-native";
 import { useAuth } from "../../auth/AuthContext";
-import MenuCard from "../components/MenuCard";
+import LogoutButton from "../../components/LogoutButton";
 import BusCard from "../components/BusCard";
 import { styles } from "../styles/home.styles";
 
@@ -30,13 +30,17 @@ export default function UserHomeScreen() {
       contentContainerStyle={styles.contentContainer}
     >
       <View style={styles.header}>
-        <Text style={styles.greeting}>
-          {getGreeting()}, {user?.name}
-        </Text>
+        <View style={styles.headerText}>
+          <Text style={styles.greeting}>
+            {getGreeting()}, {user?.name}
+          </Text>
 
-        <Text style={styles.userInfo}>
-          {user?.username} • {user?.battalion ?? "-"}
-        </Text>
+          <Text style={styles.userInfo}>
+            {user?.username} • {user?.battalion ?? "-"}
+          </Text>
+        </View>
+
+        <LogoutButton />
       </View>
 
       <View style={styles.content}>

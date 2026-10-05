@@ -1,5 +1,6 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { useAuth } from "../../auth/AuthContext";
+import LogoutButton from "../../components/LogoutButton";
 import { styles } from "../styles/adminHome.styles";
 
 export default function AdminHomeScreen() {
@@ -25,13 +26,17 @@ export default function AdminHomeScreen() {
             contentContainerStyle={styles.contentContainer}
         >
             <View style={styles.header}>
-                <Text style={styles.greeting}>
-                    {getGreeting()}, {user?.name}
-                </Text>
+                <View style={styles.headerText}>
+                    <Text style={styles.greeting}>
+                        {getGreeting()}, {user?.name}
+                    </Text>
 
-                <Text style={styles.userInfo}>
-                    {user?.username} • Administrator
-                </Text>
+                    <Text style={styles.userInfo}>
+                        {user?.username} • Administrator
+                    </Text>
+                </View>
+
+                <LogoutButton />
             </View>
 
             <View style={styles.content}>

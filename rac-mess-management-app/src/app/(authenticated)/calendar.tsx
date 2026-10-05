@@ -13,6 +13,7 @@ import {
 import { styles } from "../../user/styles/calendar.styles";
 import CalendarGrid from "../../user/components/CalendarGrid";
 import { useAuth } from "../../auth/AuthContext";
+import LogoutButton from "../../components/LogoutButton";
 import {
     getMealBookings,
     createMealBookings,
@@ -247,19 +248,23 @@ export default function CalendarScreen() {
             contentContainerStyle={styles.contentContainer}
         >
             <View style={styles.header}>
-                <Text style={styles.title}>
-                    Diet Calendar
-                </Text>
-
-                <Text style={styles.month}>
-                    {monthName} {year}
-                </Text>
-
-                {user?.role === "admin" && username && (
-                    <Text style={styles.month}>
-                        {username}
+                <View style={styles.headerText}>
+                    <Text style={styles.title}>
+                        Diet Calendar
                     </Text>
-                )}
+
+                    <Text style={styles.month}>
+                        {monthName} {year}
+                    </Text>
+
+                    {user?.role === "admin" && username && (
+                        <Text style={styles.month}>
+                            {username}
+                        </Text>
+                    )}
+                </View>
+
+                <LogoutButton />
             </View>
 
             <View style={styles.content}>

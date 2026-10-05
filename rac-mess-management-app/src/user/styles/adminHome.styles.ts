@@ -14,6 +14,13 @@ export const styles = StyleSheet.create({
         backgroundColor: "#0F2A4A",
         paddingHorizontal: 24,
         paddingVertical: 28,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+
+    headerText: {
+        flex: 1,
     },
 
     greeting: {
@@ -26,6 +33,20 @@ export const styles = StyleSheet.create({
         fontSize: 15,
         color: "#D1D5DB",
         marginTop: 8,
+    },
+
+    logoutButton: {
+        marginLeft: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 6,
+        backgroundColor: "#FFFFFF",
+    },
+
+    logoutText: {
+        color: "#0F2A4A",
+        fontSize: 14,
+        fontWeight: "600",
     },
 
     content: {

@@ -11,10 +11,18 @@ export const styles = StyleSheet.create({
   },
 
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: "#0F2A4A",
     paddingHorizontal: 24,
     paddingVertical: 28,
   },
+
+  headerText: {
+    flex: 1,
+  },
+
 
   greeting: {
     fontSize: 28,

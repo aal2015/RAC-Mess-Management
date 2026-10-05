@@ -19,6 +19,7 @@ import {
     updateMealBooking,
     deleteMealBooking
 } from "../../api/bookings";
+import LogoutButton from "../../components/LogoutButton";
 import { UnauthorizedError } from "../../api/admin";
 
 export default function BookingScreen() {
@@ -278,19 +279,23 @@ export default function BookingScreen() {
             contentContainerStyle={styles.contentContainer}
         >
             <View style={styles.header}>
-                <Text style={styles.title}>
-                    Meal Booking
-                </Text>
-
-                <Text style={styles.date}>
-                    {date}
-                </Text>
-
-                {user?.role === "admin" && username && (
-                    <Text style={styles.date}>
-                        {username}
+                <View style={styles.headerText}>
+                    <Text style={styles.title}>
+                        Meal Booking
                     </Text>
-                )}
+
+                    <Text style={styles.date}>
+                        {date}
+                    </Text>
+
+                    {user?.role === "admin" && username && (
+                        <Text style={styles.date}>
+                            {username}
+                        </Text>
+                    )}
+                </View>
+
+                <LogoutButton />
             </View>
 
             <View style={styles.card}>

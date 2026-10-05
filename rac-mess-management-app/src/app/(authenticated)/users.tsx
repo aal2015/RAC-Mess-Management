@@ -8,13 +8,13 @@ import {
 } from "react-native";
 import { useCallback, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-
 import { useAuth } from "../../auth/AuthContext";
 import {
   getBattalionUsers,
   UnauthorizedError,
   type User,
 } from "../../api/admin";
+import LogoutButton from "../../components/LogoutButton";
 
 import { styles } from "../../user/styles/users.styles";
 
@@ -88,6 +88,8 @@ export default function UsersScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>User Management</Text>
+
+        <LogoutButton />
       </View>
 
       <View style={styles.content}>
