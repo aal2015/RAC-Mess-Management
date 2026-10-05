@@ -90,6 +90,40 @@ export async function updateMealBooking(
   return response.json();
 }
 
+export async function deleteMealBooking(
+  accessToken: string,
+  username: string,
+  date: string,
+) {
+  const response = await fetch(
+    `${API_URL}/admin/bookings`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        username,
+        book_date: date,
+      }),
+    }
+  );
+
+  if (response.status === 401) {
+    throw new UnauthorizedError();
+  }
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(
+      data.detail || "Failed to delete meal booking."
+    );
+  }
+
+  return response.json();
+}
+
 export async function createMealBookings(
   accessToken: string,
   username: string,

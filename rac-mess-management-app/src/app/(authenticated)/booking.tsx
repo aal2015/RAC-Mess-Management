@@ -4,24 +4,21 @@ import {
     Pressable,
     ScrollView,
     ActivityIndicator,
+    Alert,
+    Platform,
 } from "react-native";
-
 import { useCallback, useEffect, useState } from "react";
-
 import {
     useLocalSearchParams,
     useRouter,
 } from "expo-router";
-
 import { styles } from "../../user/styles/booking.styles";
-
 import { useAuth } from "../../auth/AuthContext";
-
 import {
     getMealBookings,
     updateMealBooking,
+    deleteMealBooking
 } from "../../api/bookings";
-
 import { UnauthorizedError } from "../../api/admin";
 
 export default function BookingScreen() {
@@ -45,6 +42,7 @@ export default function BookingScreen() {
     >();
 
     const { accessToken, user, logout } = useAuth();
+    const isAdmin = user?.role === 'admin'
 
     const [lunch, setLunch] = useState(false);
     const [dinner, setDinner] = useState(false);
@@ -143,6 +141,83 @@ export default function BookingScreen() {
     useEffect(() => {
         loadBooking();
     }, [loadBooking]);
+
+    const handleDeleteBooking = () => {
+        if (isSubmitting || !accessToken || !date) {
+            return;
+        }
+
+        if (!username) {
+            setError("User information is missing.");
+            return;
+        }
+
+        const deleteBooking = async () => {
+            setError("");
+            setSuccess("");
+
+            try {
+                setIsSubmitting(true);
+
+                await deleteMealBooking(
+                    accessToken,
+                    username,
+                    date
+                );
+
+                setLunch(false);
+                setDinner(false);
+
+                setSuccess(
+                    "Meal booking deleted successfully."
+                );
+            } catch (error) {
+                if (error instanceof UnauthorizedError) {
+                    await logout();
+                    return;
+                }
+
+                setError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to delete meal booking."
+                );
+            } finally {
+                setIsSubmitting(false);
+            }
+        };
+
+        if (Platform.OS === "web") {
+            const confirmed = window.confirm(
+                `Are you sure you want to delete the booking for ${date}?`
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            void deleteBooking();
+            return;
+        }
+
+        Alert.alert(
+            "Delete Booking",
+            `Are you sure you want to delete the booking for ${date}?`,
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                        void deleteBooking();
+                    },
+                },
+            ]
+        );
+    };
 
     async function handleConfirm() {
         if (isSubmitting || !accessToken || !date) {
@@ -355,6 +430,19 @@ export default function BookingScreen() {
                                     : "Confirm"}
                             </Text>
                         </Pressable>
+
+                        {isAdmin && (
+                            <Pressable
+                                style={styles.deleteButton}
+                                onPress={handleDeleteBooking}
+                                disabled={isSubmitting}
+                            >
+                                <Text style={styles.deleteButtonText}>
+                                    {isSubmitting ? "Deleting..." : "Delete Booking"}
+                                </Text>
+                            </Pressable>
+                        )}
+
                     </View>
                 ) : (
                     <Pressable
