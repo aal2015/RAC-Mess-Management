@@ -71,4 +71,93 @@ export const styles = StyleSheet.create({
     color: "#6B7280",
     fontSize: 15,
   },
+
+  locationSection: {
+    marginTop: 24,
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
+
+  locationCard: {
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+  },
+
+  locationLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  loadingText: {
+    fontSize: 14,
+  },
+
+  noLocationText: {
+    fontSize: 15,
+    marginBottom: 12,
+  },
+
+  mapPlaceholder: {
+    height: 220,
+    marginTop: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f5f5f5",
+  },
+
+  mapPlaceholderText: {
+    fontSize: 16,
+    color: "#777",
+  },
+
+  locationButton: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    backgroundColor: "#333",
+  },
+
+  locationButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+
+  locationForm: {
+    marginTop: 16,
+  },
+
+  addressInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+  },
+
+  searchButton: {
+    marginTop: 10,
+    paddingVertical: 11,
+    borderRadius: 8,
+    alignItems: "center",
+    backgroundColor: "#555",
+  },
+
+  searchButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "500",
+  },
 });
