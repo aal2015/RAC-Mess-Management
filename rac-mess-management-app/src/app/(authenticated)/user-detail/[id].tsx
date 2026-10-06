@@ -14,7 +14,11 @@ import { useEffect, useState } from "react";
 import LogoutButton from "../../../components/LogoutButton";
 import {
   getUserLocation,
+  forwardGeocode,
+  createUserLocation,
+  updateUserLocation,
   type Location,
+  type ForwardGeocodeResult,
 } from "../../../api/location";
 
 import { useAuth } from "../../../auth/AuthContext";
@@ -34,10 +38,18 @@ export default function UserDetailScreen() {
   const [user, setUser] = useState<User | null>(null);
 
   const [location, setLocation] = useState<Location | null>(null);
+
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
+
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [address, setAddress] = useState("");
+
+  const [searchingAddress, setSearchingAddress] = useState(false);
+  const [savingLocation, setSavingLocation] = useState(false);
+
+  const [searchResult, setSearchResult] =
+    useState<ForwardGeocodeResult | null>(null);
 
 
   useEffect(() => {
@@ -80,6 +92,7 @@ export default function UserDetailScreen() {
         setLocation(data);
       } catch (error) {
         console.error("Failed to load location:", error);
+
         setLocationError("Failed to load location.");
       } finally {
         setLocationLoading(false);
@@ -88,6 +101,102 @@ export default function UserDetailScreen() {
 
     loadLocation();
   }, [accessToken, user?.username]);
+
+  async function handleSearchAddress() {
+    if (!accessToken || !address.trim()) {
+      return;
+    }
+
+    try {
+      setSearchingAddress(true);
+
+      const result = await forwardGeocode(
+        accessToken,
+        address.trim()
+      );
+
+      setSearchResult(result);
+    } catch (error) {
+      console.error("Failed to search address:", error);
+
+      setSearchResult(null);
+      setLocationError(
+        error instanceof Error
+          ? error.message
+          : "Failed to find address."
+      );
+    } finally {
+      setSearchingAddress(false);
+    }
+  }
+
+  async function handleCreateLocation() {
+    if (!accessToken || !user?.username || !searchResult) {
+      return;
+    }
+
+    try {
+      setSavingLocation(true);
+      setLocationError(null);
+
+      const createdLocation = await createUserLocation(
+        accessToken,
+        user.username,
+        searchResult.latitude,
+        searchResult.longitude,
+        searchResult.display_name
+      );
+
+      setLocation(createdLocation);
+      setIsEditingLocation(false);
+      setSearchResult(null);
+      setAddress("");
+    } catch (error) {
+      console.error("Failed to create location:", error);
+
+      setLocationError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save location."
+      );
+    } finally {
+      setSavingLocation(false);
+    }
+  }
+
+  async function handleUpdateLocation() {
+    if (!accessToken || !user?.username || !searchResult) {
+      return;
+    }
+
+    try {
+      setSavingLocation(true);
+      setLocationError(null);
+
+      const updatedLocation = await updateUserLocation(
+        accessToken,
+        user.username,
+        searchResult.latitude,
+        searchResult.longitude,
+        searchResult.display_name
+      );
+
+      setLocation(updatedLocation);
+      setIsEditingLocation(false);
+      setSearchResult(null);
+      setAddress("");
+    } catch (error) {
+      console.error("Failed to update location:", error);
+
+      setLocationError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update location."
+      );
+    } finally {
+      setSavingLocation(false);
+    }
+  }
 
   if (!user) {
     return (
@@ -152,20 +261,23 @@ export default function UserDetailScreen() {
               <Text style={styles.errorText}>
                 {locationError}
               </Text>
-            ) : location ? (
+            ) : location && !isEditingLocation ? (
               <>
                 <View style={styles.locationCard}>
                   <Text style={styles.label}>Address</Text>
+
                   <Text style={styles.value}>
                     {location.road_name ?? "-"}
                   </Text>
 
                   <Text style={styles.label}>Latitude</Text>
+
                   <Text style={styles.value}>
                     {location.latitude}
                   </Text>
 
                   <Text style={styles.label}>Longitude</Text>
+
                   <Text style={styles.value}>
                     {location.longitude}
                   </Text>
@@ -181,6 +293,8 @@ export default function UserDetailScreen() {
                   style={styles.locationButton}
                   onPress={() => {
                     setAddress(location.road_name ?? "");
+                    setSearchResult(null);
+                    setLocationError(null);
                     setIsEditingLocation(true);
                   }}
                 >
@@ -191,52 +305,103 @@ export default function UserDetailScreen() {
               </>
             ) : (
               <>
-                <Text style={styles.noLocationText}>
-                  No location has been assigned to this user.
-                </Text>
-
-                <Pressable
-                  style={styles.locationButton}
-                  onPress={() => {
-                    setAddress("");
-                    setIsEditingLocation(true);
-                  }}
-                >
-                  <Text style={styles.locationButtonText}>
-                    Add Location
+                {!location && (
+                  <Text style={styles.noLocationText}>
+                    No location has been assigned to this user.
                   </Text>
-                </Pressable>
-              </>
-            )}
+                )}
 
-            {isEditingLocation && (
-              <View style={styles.locationForm}>
-                <Text style={styles.label}>Search Address</Text>
-
-                <TextInput
-                  style={styles.addressInput}
-                  value={address}
-                  onChangeText={setAddress}
-                  placeholder="Enter an address..."
-                />
-
-                <Pressable
-                  style={styles.searchButton}
-                  onPress={() => {
-                    // LocationIQ search will be added here
-                  }}
-                >
-                  <Text style={styles.searchButtonText}>
-                    Search
+                <View style={styles.locationForm}>
+                  <Text style={styles.label}>
+                    Search Address
                   </Text>
-                </Pressable>
 
-                <View style={styles.mapPlaceholder}>
-                  <Text style={styles.mapPlaceholderText}>
-                    Map coming soon
-                  </Text>
+                  <TextInput
+                    style={styles.addressInput}
+                    value={address}
+                    onChangeText={(value) => {
+                      setAddress(value);
+                      setSearchResult(null);
+                    }}
+                    placeholder="Enter an address..."
+                  />
+
+                  <Pressable
+                    style={styles.searchButton}
+                    onPress={handleSearchAddress}
+                    disabled={searchingAddress || !address.trim()}
+                  >
+                    {searchingAddress ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.searchButtonText}>
+                        Search
+                      </Text>
+                    )}
+                  </Pressable>
+
+                  {searchResult && (
+                    <View style={styles.searchResult}>
+                      <Text style={styles.label}>
+                        Location Found
+                      </Text>
+
+                      <Text style={styles.value}>
+                        {searchResult.display_name}
+                      </Text>
+
+                      <Text style={styles.coordinates}>
+                        {searchResult.latitude},{" "}
+                        {searchResult.longitude}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.mapPlaceholder}>
+                    <Text style={styles.mapPlaceholderText}>
+                      Map coming soon
+                    </Text>
+                  </View>
+
+                  {searchResult && (
+                    <Pressable
+                      style={styles.locationButton}
+                      onPress={
+                        location
+                          ? handleUpdateLocation
+                          : handleCreateLocation
+                      }
+                      disabled={savingLocation}
+                    >
+                      {savingLocation ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text style={styles.locationButtonText}>
+                          {location
+                            ? "Update Location"
+                            : "Save Location"}
+                        </Text>
+                      )}
+                    </Pressable>
+                  )}
+
+                  {location && (
+                    <Pressable
+                      style={styles.cancelButton}
+                      onPress={() => {
+                        setIsEditingLocation(false);
+                        setSearchResult(null);
+                        setAddress("");
+                        setLocationError(null);
+                      }}
+                    >
+                      <Text style={styles.cancelButtonText}>
+                        Cancel
+                      </Text>
+                    </Pressable>
+                  )}
                 </View>
-              </View>
+              </>
             )}
           </View>
         </View>

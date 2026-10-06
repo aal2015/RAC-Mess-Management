@@ -160,4 +160,35 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
   },
+
+  cancelButton: {
+    marginTop: 8,
+    paddingVertical: 11,
+    borderRadius: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    backgroundColor: "#fff",
+  },
+
+  cancelButtonText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#555",
+  },
+
+  searchResult: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    backgroundColor: "#f8f8f8",
+  },
+
+  coordinates: {
+    marginTop: 8,
+    fontSize: 13,
+    color: "#666",
+  },
 });
