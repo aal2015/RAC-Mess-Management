@@ -23,6 +23,7 @@ from models.location import Location
 from schemas.location import (
     CreateLocationRequest,
     LocationResponse,
+    UpdateLocationRequest
 )
 
 
@@ -310,3 +311,106 @@ def create_location(
     db.refresh(location)
 
     return location
+
+@router.patch(
+    "/locations/{username}",
+    response_model=LocationResponse,
+)
+def update_user_location(
+    username: str,
+    request: UpdateLocationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    user = (
+        db.query(User)
+        .filter(
+            User.username == username,
+            User.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found in your battalion",
+        )
+
+    if not user.location_id:
+        raise HTTPException(
+            status_code=404,
+            detail="User does not have a location",
+        )
+
+    location = db.get(Location, user.location_id)
+
+    if not location:
+        raise HTTPException(
+            status_code=404,
+            detail="Location not found",
+        )
+
+    if request.latitude is not None:
+        location.latitude = request.latitude
+
+    if request.longitude is not None:
+        location.longitude = request.longitude
+
+    if request.road_name is not None:
+        location.road_name = request.road_name
+
+    db.commit()
+    db.refresh(location)
+
+    return location
+
+
+@router.delete("/locations/{username}")
+def delete_user_location(
+    username: str,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    user = (
+        db.query(User)
+        .filter(
+            User.username == username,
+            User.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found in your battalion",
+        )
+
+    if not user.location_id:
+        raise HTTPException(
+            status_code=404,
+            detail="User does not have a location",
+        )
+
+    location = db.get(Location, user.location_id)
+
+    if not location:
+        # Keep the user's relationship consistent
+        user.location_id = None
+        db.commit()
+
+        raise HTTPException(
+            status_code=404,
+            detail="Location not found",
+        )
+
+    user.location_id = None
+    db.delete(location)
+
+    db.commit()
+
+    return {
+        "message": "User location deleted successfully",
+        "username": user.username,
+    }
