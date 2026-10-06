@@ -22,3 +22,11 @@ class UpdateLocationRequest(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     road_name: str | None = None
+
+class ForwardGeocodeRequest(BaseModel):
+    address: str
+
+class ForwardGeocodeResponse(BaseModel):
+    latitude: float
+    longitude: float
+    display_name: str

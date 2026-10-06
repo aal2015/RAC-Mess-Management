@@ -7,3 +7,4 @@ pyjwt
 pwdlib[argon2]
 psycopg2-binary
 pwdlib[argon2]
+httpx==0.28.1
