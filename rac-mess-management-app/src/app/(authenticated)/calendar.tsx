@@ -349,6 +349,19 @@ export default function CalendarScreen() {
                                     0 meals
                                 </Text>
                             </View>
+
+                            <View style={styles.legendItem}>
+                                <View
+                                    style={[
+                                        styles.legendBox,
+                                        styles.noBooking,
+                                    ]}
+                                />
+
+                                <Text style={styles.legendText}>
+                                    No booking
+                                </Text>
+                            </View>
                         </View>
 
                         <View style={styles.totalSection}>

@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 
 import { styles } from "../styles/calendar.styles";
 
-type MealStatus = "full" | "partial" | "none";
+type MealStatus = "full" | "partial" | "none" | "noBooking";
 
 type Booking = {
   lunch: boolean;
@@ -37,7 +37,7 @@ function getStatus(
   booking?: Booking
 ): MealStatus {
   if (!booking) {
-    return "none";
+    return "noBooking";
   }
 
   if (booking.lunch && booking.dinner) {
@@ -63,6 +63,9 @@ function getStatusColor(
 
     case "none":
       return "#FEE2E2";
+
+    case "noBooking":
+      return "#E5E7EB";
   }
 }
 

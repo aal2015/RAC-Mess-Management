@@ -122,6 +122,10 @@ export const styles = StyleSheet.create({
         backgroundColor: "#FEE2E2",
     },
 
+    noBooking: {
+        backgroundColor: "#E5E7EB",
+    },
+
     legendText: {
         fontSize: 13,
         color: "#374151",
