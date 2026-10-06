@@ -15,6 +15,7 @@ import {
   UnauthorizedError,
   type User,
 } from "../../api/admin";
+import LogoutButton from "../../components/LogoutButton";
 
 import { styles } from "../../user/styles/directory.styles";
 
@@ -89,6 +90,8 @@ export default function DirectoryScreen() {
         <Text style={styles.title}>
           Personal Directory
         </Text>
+
+        <LogoutButton />
       </View>
 
       <View style={styles.content}>
