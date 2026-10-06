@@ -13,6 +13,8 @@ from schemas.meal_booking import (
     MealBookingResponse,
     UpdateMealBookingRequest
 )
+from models.location import Location
+from schemas.location import LocationResponse
 
 router = APIRouter(
     prefix="/users",
@@ -235,3 +237,40 @@ def update_meal_booking(
     db.refresh(booking)
 
     return booking
+
+@router.get(
+    "/location/{username}",
+    response_model=LocationResponse,
+)
+def get_user_location(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    user = (
+        db.query(User)
+        .filter(User.username == username)
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    if not user.location_id:
+        raise HTTPException(
+            status_code=404,
+            detail="User does not have a location",
+        )
+
+    location = db.get(Location, user.location_id)
+
+    if not location:
+        raise HTTPException(
+            status_code=404,
+            detail="Location not found",
+        )
+
+    return location

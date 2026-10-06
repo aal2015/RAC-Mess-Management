@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 
 class CreateLocationRequest(BaseModel):
+    username: str
     latitude: float
     longitude: float
     road_name: str | None = None

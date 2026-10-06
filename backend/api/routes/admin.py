@@ -274,6 +274,27 @@ def create_location(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
+    user = (
+        db.query(User)
+        .filter(
+            User.username == request.username,
+            User.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found in your battalion",
+        )
+
+    if user.location_id:
+        raise HTTPException(
+            status_code=409,
+            detail="User already has a location",
+        )
+
     location = Location(
         latitude=request.latitude,
         longitude=request.longitude,
@@ -281,6 +302,10 @@ def create_location(
     )
 
     db.add(location)
+    db.flush()
+
+    user.location_id = location.id
+
     db.commit()
     db.refresh(location)
 
