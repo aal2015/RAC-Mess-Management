@@ -4,7 +4,15 @@ import { Text } from "react-native";
 const LOCATIONIQ_TOKEN =
     process.env.EXPO_PUBLIC_LOCATIONIQ_MAP_TOKEN;
 
-export default function LocationMap() {
+type LocationMapProps = {
+    latitude?: number;
+    longitude?: number;
+};
+
+export default function LocationMap({
+    latitude,
+    longitude,
+}: LocationMapProps) {
     const mapContainer = useRef<HTMLDivElement | null>(null);
 
     const [status, setStatus] = useState("Loading LocationIQ...");
@@ -88,11 +96,17 @@ export default function LocationMap() {
 
                     setStatus("Creating map...");
 
+                    const hasCoordinates =
+                        latitude !== undefined &&
+                        longitude !== undefined;
+
                     map = new maplibregl.Map({
                         container: mapContainer.current,
                         style: locationiq.getLayer("Streets"),
-                        zoom: 12,
-                        center: [77.225261, 28.545192],
+                        zoom: hasCoordinates ? 16 : 12,
+                        center: hasCoordinates
+                            ? [longitude, latitude]
+                            : [77.225261, 28.545192],
                     });
 
                     map.on("load", () => {

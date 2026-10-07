@@ -286,12 +286,15 @@ export default function UserDetailScreen() {
                   </Text>
                 </View>
 
-                <View style={styles.mapPlaceholder}>
+                {/* <View style={styles.mapPlaceholder}>
                   <Text style={styles.mapPlaceholderText}>
                     Map coming soon
                   </Text>
-                </View>
-                <LocationMap />
+                </View> */}
+                <LocationMap
+                  latitude={location?.latitude}
+                  longitude={location?.longitude}
+                />
 
                 {isAdmin && (
                   <Pressable
@@ -366,11 +369,11 @@ export default function UserDetailScreen() {
                           </View>
                         )}
 
-                        <View style={styles.mapPlaceholder}>
+                        {/* <View style={styles.mapPlaceholder}>
                           <Text style={styles.mapPlaceholderText}>
                             Map coming soon
                           </Text>
-                        </View>
+                        </View> */}
 
                         {searchResult && (
                           <Pressable
@@ -441,11 +444,11 @@ export default function UserDetailScreen() {
                       </View>
                     )}
 
-                    <View style={styles.mapPlaceholder}>
+                    {/* <View style={styles.mapPlaceholder}>
                       <Text style={styles.mapPlaceholderText}>
                         Map coming soon
                       </Text>
-                    </View>
+                    </View> */}
 
                     {searchResult && (
                       <Pressable
