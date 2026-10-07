@@ -33,10 +33,11 @@ export default function UserDetailScreen() {
   const router = useRouter();
 
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { accessToken, logout } = useAuth();
+  const { accessToken, user: currentUser } = useAuth();
+
+  const isAdmin = currentUser?.role === "admin";
 
   const [user, setUser] = useState<User | null>(null);
-
   const [location, setLocation] = useState<Location | null>(null);
 
   const [locationLoading, setLocationLoading] = useState(true);
@@ -289,103 +290,176 @@ export default function UserDetailScreen() {
                   </Text>
                 </View>
 
-                <Pressable
-                  style={styles.locationButton}
-                  onPress={() => {
-                    setAddress(location.road_name ?? "");
-                    setSearchResult(null);
-                    setLocationError(null);
-                    setIsEditingLocation(true);
-                  }}
-                >
-                  <Text style={styles.locationButtonText}>
-                    Edit Location
-                  </Text>
-                </Pressable>
+                {isAdmin && (
+                  <Pressable
+                    style={styles.locationButton}
+                    onPress={() => {
+                      setAddress(location.road_name ?? "");
+                      setSearchResult(null);
+                      setLocationError(null);
+                      setIsEditingLocation(true);
+                    }}
+                  >
+                    <Text style={styles.locationButtonText}>
+                      Edit Location
+                    </Text>
+                  </Pressable>
+                )}
               </>
             ) : (
               <>
                 {!location && (
-                  <Text style={styles.noLocationText}>
-                    No location has been assigned to this user.
-                  </Text>
+                  <>
+                    <Text style={styles.noLocationText}>
+                      No location has been assigned to this user.
+                    </Text>
+
+                    {isAdmin && (
+                      <View style={styles.locationForm}>
+                        <Text style={styles.label}>
+                          Search Address
+                        </Text>
+
+                        <TextInput
+                          style={styles.addressInput}
+                          value={address}
+                          onChangeText={(value) => {
+                            setAddress(value);
+                            setSearchResult(null);
+                          }}
+                          placeholder="Enter an address..."
+                        />
+
+                        <Pressable
+                          style={styles.searchButton}
+                          onPress={handleSearchAddress}
+                          disabled={
+                            searchingAddress || !address.trim()
+                          }
+                        >
+                          {searchingAddress ? (
+                            <ActivityIndicator color="#fff" />
+                          ) : (
+                            <Text style={styles.searchButtonText}>
+                              Search
+                            </Text>
+                          )}
+                        </Pressable>
+
+                        {searchResult && (
+                          <View style={styles.searchResult}>
+                            <Text style={styles.label}>
+                              Location Found
+                            </Text>
+
+                            <Text style={styles.value}>
+                              {searchResult.display_name}
+                            </Text>
+
+                            <Text style={styles.coordinates}>
+                              {searchResult.latitude},{" "}
+                              {searchResult.longitude}
+                            </Text>
+                          </View>
+                        )}
+
+                        <View style={styles.mapPlaceholder}>
+                          <Text style={styles.mapPlaceholderText}>
+                            Map coming soon
+                          </Text>
+                        </View>
+
+                        {searchResult && (
+                          <Pressable
+                            style={styles.locationButton}
+                            onPress={handleCreateLocation}
+                            disabled={savingLocation}
+                          >
+                            {savingLocation ? (
+                              <ActivityIndicator color="#fff" />
+                            ) : (
+                              <Text style={styles.locationButtonText}>
+                                Save Location
+                              </Text>
+                            )}
+                          </Pressable>
+                        )}
+                      </View>
+                    )}
+                  </>
                 )}
 
-                <View style={styles.locationForm}>
-                  <Text style={styles.label}>
-                    Search Address
-                  </Text>
-
-                  <TextInput
-                    style={styles.addressInput}
-                    value={address}
-                    onChangeText={(value) => {
-                      setAddress(value);
-                      setSearchResult(null);
-                    }}
-                    placeholder="Enter an address..."
-                  />
-
-                  <Pressable
-                    style={styles.searchButton}
-                    onPress={handleSearchAddress}
-                    disabled={searchingAddress || !address.trim()}
-                  >
-                    {searchingAddress ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <Text style={styles.searchButtonText}>
-                        Search
-                      </Text>
-                    )}
-                  </Pressable>
-
-                  {searchResult && (
-                    <View style={styles.searchResult}>
-                      <Text style={styles.label}>
-                        Location Found
-                      </Text>
-
-                      <Text style={styles.value}>
-                        {searchResult.display_name}
-                      </Text>
-
-                      <Text style={styles.coordinates}>
-                        {searchResult.latitude},{" "}
-                        {searchResult.longitude}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.mapPlaceholder}>
-                    <Text style={styles.mapPlaceholderText}>
-                      Map coming soon
+                {location && isEditingLocation && isAdmin && (
+                  <View style={styles.locationForm}>
+                    <Text style={styles.label}>
+                      Search Address
                     </Text>
-                  </View>
 
-                  {searchResult && (
+                    <TextInput
+                      style={styles.addressInput}
+                      value={address}
+                      onChangeText={(value) => {
+                        setAddress(value);
+                        setSearchResult(null);
+                      }}
+                      placeholder="Enter an address..."
+                    />
+
                     <Pressable
-                      style={styles.locationButton}
-                      onPress={
-                        location
-                          ? handleUpdateLocation
-                          : handleCreateLocation
+                      style={styles.searchButton}
+                      onPress={handleSearchAddress}
+                      disabled={
+                        searchingAddress || !address.trim()
                       }
-                      disabled={savingLocation}
                     >
-                      {savingLocation ? (
+                      {searchingAddress ? (
                         <ActivityIndicator color="#fff" />
                       ) : (
-                        <Text style={styles.locationButtonText}>
-                          {location
-                            ? "Update Location"
-                            : "Save Location"}
+                        <Text style={styles.searchButtonText}>
+                          Search
                         </Text>
                       )}
                     </Pressable>
-                  )}
 
-                  {location && (
+                    {searchResult && (
+                      <View style={styles.searchResult}>
+                        <Text style={styles.label}>
+                          Location Found
+                        </Text>
+
+                        <Text style={styles.value}>
+                          {searchResult.display_name}
+                        </Text>
+
+                        <Text style={styles.coordinates}>
+                          {searchResult.latitude},{" "}
+                          {searchResult.longitude}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.mapPlaceholder}>
+                      <Text style={styles.mapPlaceholderText}>
+                        Map coming soon
+                      </Text>
+                    </View>
+
+                    {searchResult && (
+                      <Pressable
+                        style={styles.locationButton}
+                        onPress={handleUpdateLocation}
+                        disabled={savingLocation}
+                      >
+                        {savingLocation ? (
+                          <ActivityIndicator color="#fff" />
+                        ) : (
+                          <Text style={styles.locationButtonText}>
+                            Update Location
+                          </Text>
+                        )}
+                      </Pressable>
+                    )}
+
                     <Pressable
                       style={styles.cancelButton}
                       onPress={() => {
@@ -399,8 +473,8 @@ export default function UserDetailScreen() {
                         Cancel
                       </Text>
                     </Pressable>
-                  )}
-                </View>
+                  </View>
+                )}
               </>
             )}
           </View>
