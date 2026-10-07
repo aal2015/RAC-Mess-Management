@@ -10,6 +10,7 @@ from core.database import get_db
 from models.route import Route
 from models.user import User
 from schemas.route import RouteResponse
+from schemas.route import RouteLocationResponse
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
 
@@ -62,5 +63,44 @@ def get_routes(
             Route.is_active.is_(True),
         )
         .order_by(Route.route_number)
+        .all()
+    )
+
+@router.get(
+    "/{route_number}/locations",
+    response_model=list[RouteLocationResponse],
+)
+def get_route_locations(
+    route_number: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not current_user.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="User is not assigned to a battalion",
+        )
+
+    route = (
+        db.query(Route)
+        .filter(
+            Route.route_number == route_number,
+            Route.battalion == current_user.battalion,
+        )
+        .first()
+    )
+
+    if not route:
+        raise HTTPException(
+            status_code=404,
+            detail="Route not found",
+        )
+
+    return (
+        db.query(RouteLocation)
+        .filter(RouteLocation.route_id == route.id)
+        .order_by(
+            RouteLocation.stop_order.asc().nulls_last()
+        )
         .all()
     )

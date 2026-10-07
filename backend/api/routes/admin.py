@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -24,6 +25,13 @@ from schemas.location import (
     CreateLocationRequest,
     LocationResponse,
     UpdateLocationRequest
+)
+from models.route_location import RouteLocation
+from models.route import Route
+from schemas.route import (
+    RouteLocationResponse,
+    UpdateRouteLocationRequest,
+    AddRouteLocationRequest,
 )
 
 
@@ -413,4 +421,212 @@ def delete_user_location(
     return {
         "message": "User location deleted successfully",
         "username": user.username,
+    }
+
+
+@router.post(
+    "/{route_number}/locations",
+    response_model=RouteLocationResponse,
+)
+def link_route_location(
+    route_number: int,
+    request: AddRouteLocationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
+    route = (
+        db.query(Route)
+        .filter(
+            Route.route_number == route_number,
+            Route.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not route:
+        raise HTTPException(
+            status_code=404,
+            detail="Route not found in your battalion",
+        )
+
+    location = db.get(Location, request.location_id)
+
+    if not location:
+        raise HTTPException(
+            status_code=404,
+            detail="Location not found",
+        )
+
+    existing = (
+        db.query(RouteLocation)
+        .filter(
+            RouteLocation.route_id == route.id,
+            RouteLocation.location_id == request.location_id,
+        )
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Location is already assigned to this route",
+        )
+
+    if request.stop_order is not None:
+        existing_order = (
+            db.query(RouteLocation)
+            .filter(
+                RouteLocation.route_id == route.id,
+                RouteLocation.stop_order == request.stop_order,
+            )
+            .first()
+        )
+
+        if existing_order:
+            raise HTTPException(
+                status_code=409,
+                detail="Stop order already exists for this route",
+            )
+
+    route_location = RouteLocation(
+        route_id=route.id,
+        location_id=request.location_id,
+        stop_order=request.stop_order,
+    )
+
+    db.add(route_location)
+    db.commit()
+    db.refresh(route_location)
+
+    return route_location
+
+
+# update stop order
+@router.patch(
+    "/{route_number}/locations/{location_id}",
+    response_model=RouteLocationResponse,
+)
+def update_route_location(
+    route_number: int,
+    location_id: UUID,
+    request: UpdateRouteLocationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
+    route = (
+        db.query(Route)
+        .filter(
+            Route.route_number == route_number,
+            Route.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not route:
+        raise HTTPException(
+            status_code=404,
+            detail="Route not found in your battalion",
+        )
+
+    route_location = (
+        db.query(RouteLocation)
+        .filter(
+            RouteLocation.route_id == route.id,
+            RouteLocation.location_id == location_id,
+        )
+        .first()
+    )
+
+    if not route_location:
+        raise HTTPException(
+            status_code=404,
+            detail="Location is not assigned to this route",
+        )
+
+    if request.stop_order is not None:
+        existing_order = (
+            db.query(RouteLocation)
+            .filter(
+                RouteLocation.route_id == route.id,
+                RouteLocation.stop_order == request.stop_order,
+                RouteLocation.location_id != location_id,
+            )
+            .first()
+        )
+
+        if existing_order:
+            raise HTTPException(
+                status_code=409,
+                detail="Stop order already exists for this route",
+            )
+
+    route_location.stop_order = request.stop_order
+
+    db.commit()
+    db.refresh(route_location)
+
+    return route_location
+
+@router.delete(
+    "/{route_number}/locations/{location_id}",
+)
+def delete_route_location(
+    route_number: int,
+    location_id: UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
+    route = (
+        db.query(Route)
+        .filter(
+            Route.route_number == route_number,
+            Route.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not route:
+        raise HTTPException(
+            status_code=404,
+            detail="Route not found in your battalion",
+        )
+
+    route_location = (
+        db.query(RouteLocation)
+        .filter(
+            RouteLocation.route_id == route.id,
+            RouteLocation.location_id == location_id,
+        )
+        .first()
+    )
+
+    if not route_location:
+        raise HTTPException(
+            status_code=404,
+            detail="Location is not assigned to this route",
+        )
+
+    db.delete(route_location)
+    db.commit()
+
+    return {
+        "message": "Location removed from route successfully",
     }

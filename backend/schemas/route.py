@@ -29,3 +29,16 @@ class RouteResponse(BaseModel):
 
 class AddRouteLocationRequest(BaseModel):
     location_id: UUID
+    stop_order: int | None = None
+
+
+class UpdateRouteLocationRequest(BaseModel):
+    stop_order: int | None = None
+
+
+class RouteLocationResponse(BaseModel):
+    route_id: UUID
+    location_id: UUID
+    stop_order: int | None
+
+    model_config = {"from_attributes": True}
