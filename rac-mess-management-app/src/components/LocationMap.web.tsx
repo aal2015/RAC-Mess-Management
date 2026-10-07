@@ -14,6 +14,7 @@ export default function LocationMap({
     longitude,
 }: LocationMapProps) {
     const mapContainer = useRef<HTMLDivElement | null>(null);
+    const mapRef = useRef<any>(null);
 
     const [status, setStatus] = useState("Loading LocationIQ...");
     const [error, setError] = useState<string | null>(null);
@@ -29,8 +30,6 @@ export default function LocationMap({
             setStatus("Initialization failed");
             return;
         }
-
-        let map: any = null;
 
         try {
             setStatus("Loading LocationIQ MapLibre...");
@@ -100,7 +99,7 @@ export default function LocationMap({
                         latitude !== undefined &&
                         longitude !== undefined;
 
-                    map = new maplibregl.Map({
+                    mapRef.current = new maplibregl.Map({
                         container: mapContainer.current,
                         style: locationiq.getLayer("Streets"),
                         zoom: hasCoordinates ? 16 : 12,
@@ -109,11 +108,11 @@ export default function LocationMap({
                             : [77.225261, 28.545192],
                     });
 
-                    map.on("load", () => {
+                    mapRef.current.on("load", () => {
                         setStatus("LocationIQ map loaded");
                     });
 
-                    map.on("error", (event: any) => {
+                    mapRef.current.on("error", (event: any) => {
                         const message =
                             event?.error?.message ??
                             "Unknown MapLibre error";
@@ -142,8 +141,9 @@ export default function LocationMap({
                 });
 
             return () => {
-                if (map) {
-                    map.remove();
+                if (mapRef.current) {
+                    mapRef.current.remove();
+                    mapRef.current = null;
                 }
             };
         } catch (error) {
