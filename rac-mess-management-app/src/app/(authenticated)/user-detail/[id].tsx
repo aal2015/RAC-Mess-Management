@@ -29,6 +29,8 @@ import {
 
 import { styles } from "../../../user/styles/user-detail.styles";
 
+import LocationMap from "@/components/LocationMap";
+
 export default function UserDetailScreen() {
   const router = useRouter();
 
@@ -289,6 +291,7 @@ export default function UserDetailScreen() {
                     Map coming soon
                   </Text>
                 </View>
+                <LocationMap />
 
                 {isAdmin && (
                   <Pressable
