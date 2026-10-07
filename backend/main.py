@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import auth, admin, health, users, maintainer, location
+from api.routes import auth, admin, health, users, maintainer, location, admin_routes, routes
 from models.user import User
 from models.location import Location
 from models.meal_item import MealItem
@@ -27,3 +27,5 @@ app.include_router(admin.router)
 app.include_router(users.router)
 app.include_router(maintainer.router)
 app.include_router(location.router)
+app.include_router(admin_routes.router)
+app.include_router(routes.router)
