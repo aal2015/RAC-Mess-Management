@@ -162,6 +162,21 @@ export default function LocationMap({
         }
     }, []);
 
+    useEffect(() => {
+        if (
+            latitude === undefined ||
+            longitude === undefined ||
+            !mapRef.current
+        ) {
+            return;
+        }
+
+        mapRef.current.flyTo({
+            center: [longitude, latitude],
+            zoom: 16,
+        });
+    }, [latitude, longitude]);
+
     return (
         <>
             <Text>Status: {status}</Text>

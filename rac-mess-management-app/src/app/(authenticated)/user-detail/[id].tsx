@@ -353,20 +353,36 @@ export default function UserDetailScreen() {
                         </Pressable>
 
                         {searchResult && (
-                          <View style={styles.searchResult}>
-                            <Text style={styles.label}>
-                              Location Found
-                            </Text>
+                          <>
+                            <View style={styles.searchResult}>
+                              <Text style={styles.label}>
+                                Location Found
+                              </Text>
 
-                            <Text style={styles.value}>
-                              {searchResult.display_name}
-                            </Text>
+                              <Text style={styles.value}>
+                                {searchResult.display_name}
+                              </Text>
 
-                            <Text style={styles.coordinates}>
-                              {searchResult.latitude},{" "}
-                              {searchResult.longitude}
-                            </Text>
-                          </View>
+                              <Text style={styles.coordinates}>
+                                {searchResult.latitude},{" "}
+                                {searchResult.longitude}
+                              </Text>
+                            </View>
+
+                            <Pressable
+                              style={styles.locationButton}
+                              onPress={handleUpdateLocation}
+                              disabled={savingLocation}
+                            >
+                              {savingLocation ? (
+                                <ActivityIndicator color="#fff" />
+                              ) : (
+                                <Text style={styles.locationButtonText}>
+                                  Update Location
+                                </Text>
+                              )}
+                            </Pressable>
+                          </>
                         )}
 
                         {/* <View style={styles.mapPlaceholder}>
@@ -441,6 +457,10 @@ export default function UserDetailScreen() {
                           {searchResult.latitude},{" "}
                           {searchResult.longitude}
                         </Text>
+                        <LocationMap
+                          latitude={searchResult.latitude}
+                          longitude={searchResult.longitude}
+                        />
                       </View>
                     )}
 
