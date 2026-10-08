@@ -17,7 +17,7 @@ type UsersTableProps = {
     error: string | null;
 };
 
-export default function RouteUsersTable({
+export default function UsersTable({
     users,
     loading,
     error,

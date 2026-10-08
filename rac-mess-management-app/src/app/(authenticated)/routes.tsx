@@ -16,9 +16,10 @@ import {
     createRoute
 } from "@/api/routes";
 
-import RouteUsersTable from "@/routes/components/RouterUserTable";
+import UsersTable from "@/routes/components/UserTable";
 import RoutesTable from "@/routes/components/RoutesTable";
 import AddRouteModal from "@/routes/components/AddRouteModal";
+import RouteDetails from "@/routes/components/RouteDetails";
 import { styles } from "../../user/styles/routes.styles";
 
 export default function RoutesScreen() {
@@ -27,9 +28,10 @@ export default function RoutesScreen() {
     const [users, setUsers] = useState<UserWithLocation[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(true);
     const [userError, setUserError] = useState<string | null>(null);
+
     const [routes, setRoutes] = useState<Route[]>([]);
     const [loadingRoutes, setLoadingRoutes] = useState(true);
-
+    const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
     const [routeError, setRouteError] = useState<string | null>(null);
     const [showAddRouteModal, setShowAddRouteModal] = useState(false);
     const [creatingRoute, setCreatingRoute] = useState(false);
@@ -40,7 +42,7 @@ export default function RoutesScreen() {
         name: string
     ) => {
         if (!accessToken) return;
-        
+
         try {
             setCreatingRoute(true);
             setCreateRouteError(null);
@@ -143,7 +145,7 @@ export default function RoutesScreen() {
                     </View>
                 </View>
 
-                <RouteUsersTable
+                <UsersTable
                     users={users}
                     loading={loadingUsers}
                     error={userError}
@@ -153,7 +155,13 @@ export default function RoutesScreen() {
                     routes={routes}
                     loading={loadingRoutes}
                     error={routeError}
-                    onAddRoute={() => setShowAddRouteModal(true)}
+                    onAddRoute={() => {
+                        setCreateRouteError(null);
+                        setShowAddRouteModal(true);
+                    }}
+                    onSelectRoute={(route) => {
+                        setSelectedRoute(route);
+                    }}
                 />
 
                 <AddRouteModal
@@ -168,6 +176,23 @@ export default function RoutesScreen() {
                     }}
                     onSubmit={handleCreateRoute}
                 />
+
+                {selectedRoute ? (
+                    <RouteDetails
+                        route={selectedRoute}
+                        users={users}
+                    />
+                ) : (
+                    <View style={styles.card}>
+                        <Text style={styles.label}>
+                            Route Details
+                        </Text>
+
+                        <Text style={styles.sectionSubtitle}>
+                            Select a route to view its users.
+                        </Text>
+                    </View>
+                )}
             </ScrollView>
         </View>
     );

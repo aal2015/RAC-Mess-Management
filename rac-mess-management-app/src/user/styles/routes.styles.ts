@@ -369,4 +369,42 @@ export const styles = StyleSheet.create({
     disabledButton: {
         opacity: 0.7,
     },
+
+    sequenceColumn: {
+        width: 70,
+    },
+
+    mapPlaceholder: {
+        height: 220,
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        borderRadius: 8,
+        backgroundColor: "#F8FAFC",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 20,
+    },
+
+    mapPlaceholderTitle: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#374151",
+    },
+
+    mapPlaceholderText: {
+        fontSize: 13,
+        color: "#6B7280",
+        marginTop: 4,
+    },
+
+    routeUsersSection: {
+        marginTop: 4,
+    },
+
+    routeUsersTitle: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#111827",
+        marginBottom: 12,
+    },
 });

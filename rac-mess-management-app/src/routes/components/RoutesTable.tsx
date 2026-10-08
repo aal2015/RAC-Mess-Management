@@ -14,6 +14,7 @@ type RoutesTableProps = {
     loading: boolean;
     error: string | null;
     onAddRoute: () => void;
+    onSelectRoute: (route: Route) => void;
 };
 
 export default function RoutesTable({
@@ -21,6 +22,7 @@ export default function RoutesTable({
     loading,
     error,
     onAddRoute,
+    onSelectRoute,
 }: RoutesTableProps) {
     return (
         <View style={styles.card}>
@@ -109,9 +111,10 @@ export default function RoutesTable({
                         </Text>
                     ) : (
                         routes.map((route) => (
-                            <View
+                            <Pressable
                                 key={route.id}
                                 style={styles.tableRow}
+                                onPress={() => onSelectRoute(route)}
                             >
                                 <Text
                                     style={[
@@ -119,8 +122,7 @@ export default function RoutesTable({
                                         styles.routeNumberColumn,
                                     ]}
                                 >
-                                    Route{" "}
-                                    {route.route_number}
+                                    Route {route.route_number}
                                 </Text>
 
                                 <Text
@@ -140,19 +142,15 @@ export default function RoutesTable({
                                     ]}
                                     numberOfLines={1}
                                 >
-                                    {route.driver?.name ??
-                                        "No driver"}
+                                    {route.driver?.name ?? "No driver"}
                                 </Text>
 
-                                <View
-                                    style={
-                                        styles.actionColumn
-                                    }
-                                >
+                                <View style={styles.actionColumn}>
                                     <Pressable
-                                        style={
-                                            styles.actionButton
-                                        }
+                                        style={styles.actionButton}
+                                        onPress={(event) => {
+                                            event.stopPropagation();
+                                        }}
                                     >
                                         <Ionicons
                                             name="ellipsis-vertical"
@@ -161,7 +159,7 @@ export default function RoutesTable({
                                         />
                                     </Pressable>
                                 </View>
-                            </View>
+                            </Pressable>
                         ))
                     )}
                 </View>
