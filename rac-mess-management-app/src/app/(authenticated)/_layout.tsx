@@ -115,7 +115,7 @@ export default function AuthenticatedLayout() {
             title: "Routes",
             tabBarIcon: ({ color, size }) => (
               <Ionicons
-                name="people"
+                name="navigate-outline"
                 size={size}
                 color={color}
               />
