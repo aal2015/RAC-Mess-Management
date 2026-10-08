@@ -1,68 +1,44 @@
 import {
     View,
     Text,
-    Pressable,
-    TextInput,
     ScrollView,
 } from "react-native";
-import { useState, useEffect } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import LogoutButton from "../../components/LogoutButton";
-import { styles } from "../../user/styles/routes.styles";
-import { getBattalionUsersWithLocations, UserWithLocation } from "@/api/users";
-import { useAuth } from "../../auth/AuthContext";
-import RouteUsersTable from "../../user/components/RouterUserTable";
-import RoutesTable from "@/user/components/RoutesTable";
+import { useEffect, useState } from "react";
 
-const routes = [
-    {
-        id: "1",
-        route_number: 1,
-        name: "Bus 1",
-        driver_id: "driver-1",
-    },
-    {
-        id: "2",
-        route_number: 2,
-        name: "Bus 2",
-        driver_id: null,
-    },
-];
+import { useAuth } from "../../auth/AuthContext";
+import {
+    getBattalionUsersWithLocations,
+    UserWithLocation,
+} from "@/api/users";
+import {
+    getRoutes,
+    Route,
+} from "@/api/routes";
+
+import RouteUsersTable from "@/user/components/RouterUserTable";
+import RoutesTable from "@/user/components/RoutesTable";
+import { styles } from "../../user/styles/routes.styles";
 
 export default function RoutesScreen() {
     const { accessToken } = useAuth();
 
-    const [users, setUsers] = useState<UserWithLocation[]>([]);
-    const [loadingUsers, setLoadingUsers] = useState(true);
-    const [userError, setUserError] = useState<string | null>(null);
+    const [users, setUsers] =
+        useState<UserWithLocation[]>([]);
 
-    const [userFilter, setUserFilter] = useState<
-        "assigned" | "unassigned"
-    >("unassigned");
+    const [loadingUsers, setLoadingUsers] =
+        useState(true);
 
-    const [search, setSearch] = useState("");
+    const [userError, setUserError] =
+        useState<string | null>(null);
 
-    const filteredUsers = users.filter((user) => {
-        if (user.role !== "user") {
-            return false;
-        }
+    const [routes, setRoutes] =
+        useState<Route[]>([]);
 
-        const matchesFilter =
-            userFilter === "assigned"
-                ? user.route !== null
-                : user.route === null;
+    const [loadingRoutes, setLoadingRoutes] =
+        useState(true);
 
-        const searchTerm = search.toLowerCase().trim();
-
-        const matchesSearch =
-            !searchTerm ||
-            user.name.toLowerCase().includes(searchTerm) ||
-            user.location?.road_name
-                ?.toLowerCase()
-                .includes(searchTerm);
-
-        return matchesFilter && matchesSearch;
-    });
+    const [routeError, setRouteError] =
+        useState<string | null>(null);
 
     useEffect(() => {
         if (!accessToken) return;
@@ -92,6 +68,32 @@ export default function RoutesScreen() {
         loadUsers();
     }, [accessToken]);
 
+    useEffect(() => {
+        if (!accessToken) return;
+
+        const loadRoutes = async () => {
+            try {
+                setLoadingRoutes(true);
+                setRouteError(null);
+
+                const data =
+                    await getRoutes(accessToken);
+
+                setRoutes(data);
+            } catch (error) {
+                setRouteError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load routes"
+                );
+            } finally {
+                setLoadingRoutes(false);
+            }
+        };
+
+        loadRoutes();
+    }, [accessToken]);
+
     return (
         <View style={styles.container}>
             <ScrollView
@@ -119,10 +121,10 @@ export default function RoutesScreen() {
 
                 <RoutesTable
                     routes={routes}
-                    loading={false}
-                    error={null}
+                    loading={loadingRoutes}
+                    error={routeError}
                     onAddRoute={() => {
-                        // Add route form later
+                        // Add route later
                     }}
                 />
             </ScrollView>

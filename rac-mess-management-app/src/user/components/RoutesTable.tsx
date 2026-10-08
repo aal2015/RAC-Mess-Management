@@ -2,18 +2,12 @@ import {
     View,
     Text,
     Pressable,
-    ActivityIndicator
+    ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+import { Route } from "@/api/routes";
 import { styles } from "../../user/styles/routes.styles";
-
-export type Route = {
-    id: string;
-    route_number: number;
-    name: string;
-    driver_id: string | null;
-};
 
 type RoutesTableProps = {
     routes: Route[];
@@ -125,7 +119,8 @@ export default function RoutesTable({
                                         styles.routeNumberColumn,
                                     ]}
                                 >
-                                    Route {route.route_number}
+                                    Route{" "}
+                                    {route.route_number}
                                 </Text>
 
                                 <Text
@@ -145,9 +140,8 @@ export default function RoutesTable({
                                     ]}
                                     numberOfLines={1}
                                 >
-                                    {route.driver_id
-                                        ? "Assigned"
-                                        : "No driver"}
+                                    {route.driver?.name ??
+                                        "No driver"}
                                 </Text>
 
                                 <View
@@ -159,9 +153,6 @@ export default function RoutesTable({
                                         style={
                                             styles.actionButton
                                         }
-                                        onPress={() => {
-                                            // Open route actions
-                                        }}
                                     >
                                         <Ionicons
                                             name="ellipsis-vertical"
