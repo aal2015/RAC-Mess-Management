@@ -15,16 +15,21 @@ class UpdateRouteRequest(BaseModel):
     driver_username: str | None = None
 
 
+class RouteDriverResponse(BaseModel):
+    id: UUID
+    username: str
+    name: str
+    phone: str | None
+
+
 class RouteResponse(BaseModel):
     id: UUID
     battalion: str
     route_number: int
     name: str
-    driver_id: UUID | None
+    driver: RouteDriverResponse | None
     is_active: bool
     created_at: datetime
-
-    model_config = {"from_attributes": True}
 
 
 class AddRouteLocationRequest(BaseModel):

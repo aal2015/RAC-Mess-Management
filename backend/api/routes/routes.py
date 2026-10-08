@@ -9,11 +9,13 @@ from api.deps import get_current_user
 from core.database import get_db
 from models.route import Route
 from models.user import User
-from schemas.route import RouteResponse
-from schemas.route import RouteLocationResponse
+from schemas.route import (
+    RouteResponse,
+    RouteLocationResponse,
+    RouteDriverResponse
+    )
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
-
 
 @router.get("/{route_id}", response_model=RouteResponse)
 def get_route(
@@ -56,8 +58,12 @@ def get_routes(
             detail="User is not assigned to a battalion",
         )
 
-    return (
-        db.query(Route)
+    rows = (
+        db.query(Route, User)
+        .outerjoin(
+            User,
+            Route.driver_id == User.id,
+        )
         .filter(
             Route.battalion == current_user.battalion,
             Route.is_active.is_(True),
@@ -65,6 +71,29 @@ def get_routes(
         .order_by(Route.route_number)
         .all()
     )
+
+    return [
+        RouteResponse(
+            id=route.id,
+            battalion=route.battalion,
+            route_number=route.route_number,
+            name=route.name,
+            driver=(
+                RouteDriverResponse(
+                    id=driver.id,
+                    username=driver.username,
+                    name=driver.name,
+                    phone=driver.phone,
+                )
+                if driver
+                else None
+            ),
+            is_active=route.is_active,
+            created_at=route.created_at,
+        )
+        for route, driver in rows
+    ]
+
 
 @router.get(
     "/{route_number}/locations",

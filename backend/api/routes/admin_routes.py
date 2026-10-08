@@ -16,6 +16,7 @@ from schemas.route import (
     CreateRouteRequest,
     RouteResponse,
     UpdateRouteRequest,
+    RouteDriverResponse,
 )
 
 router = APIRouter(
@@ -152,7 +153,29 @@ def update_route(
     db.commit()
     db.refresh(route)
 
-    return route
+    driver = None
+
+    if route.driver_id:
+        driver = db.get(User, route.driver_id)
+
+    return RouteResponse(
+        id=route.id,
+        battalion=route.battalion,
+        route_number=route.route_number,
+        name=route.name,
+        driver=(
+            RouteDriverResponse(
+                id=driver.id,
+                username=driver.username,
+                name=driver.name,
+                phone=driver.phone,
+            )
+            if driver
+            else None
+        ),
+        is_active=route.is_active,
+        created_at=route.created_at,
+    )
 
 @router.delete("/{route_id}")
 def delete_route(
