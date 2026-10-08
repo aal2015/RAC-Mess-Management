@@ -8,10 +8,11 @@ from core.database import get_db
 from models.user import User
 from schemas.user import (
     UserLocationResponse,
-    UserWithLocationResponse
+    UserWithLocationResponse,
+    UserResponse, 
+    UserRouteResponse   
 )
-from models.meal_booking import MealBooking
-from schemas.user import UserResponse
+from models.meal_booking import MealBooking  
 from schemas.meal_booking import (
     CreateMealBookingsRequest,
     MealBookingResponse,
@@ -19,6 +20,8 @@ from schemas.meal_booking import (
 )
 from models.location import Location
 from schemas.location import LocationResponse
+from models.route import Route
+from models.route_location import RouteLocation
 
 router = APIRouter(
     prefix="/users",
@@ -287,30 +290,37 @@ def get_battalion_users_with_locations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    users = (
-        db.query(User)
+    if not current_user.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="User is not assigned to a battalion",
+        )
+
+    rows = (
+        db.query(User, Location, Route)
+        .outerjoin(
+            Location,
+            User.location_id == Location.id,
+        )
+        .outerjoin(
+            RouteLocation,
+            RouteLocation.location_id == Location.id,
+        )
+        .outerjoin(
+            Route,
+            Route.id == RouteLocation.route_id,
+        )
         .filter(
             User.battalion == current_user.battalion,
+            (Route.battalion == current_user.battalion)
+            | (Route.id.is_(None)),
         )
         .all()
     )
 
     result = []
 
-    for user in users:
-        location = None
-
-        if user.location_id:
-            db_location = db.get(Location, user.location_id)
-
-            if db_location:
-                location = UserLocationResponse(
-                    id=db_location.id,
-                    latitude=db_location.latitude,
-                    longitude=db_location.longitude,
-                    road_name=db_location.road_name,
-                )
-
+    for user, location, route in rows:
         result.append(
             UserWithLocationResponse(
                 id=user.id,
@@ -321,7 +331,25 @@ def get_battalion_users_with_locations(
                 battalion=user.battalion,
                 bus=user.bus,
                 is_active=user.is_active,
-                location=location,
+                location=(
+                    UserLocationResponse(
+                        id=location.id,
+                        latitude=location.latitude,
+                        longitude=location.longitude,
+                        road_name=location.road_name,
+                    )
+                    if location
+                    else None
+                ),
+                route=(
+                    UserRouteResponse(
+                        id=route.id,
+                        route_number=route.route_number,
+                        name=route.name,
+                    )
+                    if route
+                    else None
+                ),
             )
         )
 

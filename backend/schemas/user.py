@@ -36,6 +36,12 @@ class UserLocationResponse(BaseModel):
     road_name: str | None
 
 
+class UserRouteResponse(BaseModel):
+    id: UUID
+    route_number: int
+    name: str
+
+
 class UserWithLocationResponse(BaseModel):
     id: UUID
     username: str
@@ -46,3 +52,4 @@ class UserWithLocationResponse(BaseModel):
     bus: str | None
     is_active: bool
     location: UserLocationResponse | None
+    route: UserRouteResponse | None
