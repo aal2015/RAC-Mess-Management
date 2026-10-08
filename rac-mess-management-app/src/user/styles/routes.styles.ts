@@ -146,7 +146,7 @@ export const styles = StyleSheet.create({
 
     tableRow: {
         flexDirection: "row",
-        alignItems: "center",
+        alignItems: "flex-start",
         minHeight: 52,
         paddingHorizontal: 12,
         paddingVertical: 10,

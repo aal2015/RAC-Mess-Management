@@ -191,10 +191,8 @@ export default function RouteUsersTable({
                                         styles.tableText,
                                         styles.locationColumn,
                                     ]}
-                                    numberOfLines={1}
                                 >
-                                    {user.location?.road_name ??
-                                        "No location"}
+                                    {user.location?.road_name ?? "No location"}
                                 </Text>
 
                                 <View style={styles.routeColumn}>
