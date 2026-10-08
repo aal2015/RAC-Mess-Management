@@ -12,6 +12,22 @@ import { styles } from "../../user/styles/routes.styles";
 import { getBattalionUsersWithLocations, UserWithLocation } from "@/api/users";
 import { useAuth } from "../../auth/AuthContext";
 import RouteUsersTable from "../../user/components/RouterUserTable";
+import RoutesTable from "@/user/components/RoutesTable";
+
+const routes = [
+    {
+        id: "1",
+        route_number: 1,
+        name: "Bus 1",
+        driver_id: "driver-1",
+    },
+    {
+        id: "2",
+        route_number: 2,
+        name: "Bus 2",
+        driver_id: null,
+    },
+];
 
 export default function RoutesScreen() {
     const { accessToken } = useAuth();
@@ -60,7 +76,7 @@ export default function RoutesScreen() {
                     await getBattalionUsersWithLocations(
                         accessToken
                     );
-                
+
                 setUsers(data);
             } catch (error) {
                 setUserError(
@@ -101,9 +117,14 @@ export default function RoutesScreen() {
                     error={userError}
                 />
 
-                {/* RoutesTable will go here */}
-
-                {/* RouteUsersTable will go here */}
+                <RoutesTable
+                    routes={routes}
+                    loading={false}
+                    error={null}
+                    onAddRoute={() => {
+                        // Add route form later
+                    }}
+                />
             </ScrollView>
         </View>
     );

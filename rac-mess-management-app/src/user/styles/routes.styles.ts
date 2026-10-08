@@ -232,4 +232,48 @@ export const styles = StyleSheet.create({
         textAlign: "center",
         paddingVertical: 16,
     },
+
+    addRouteButton: {
+        height: 44,
+        borderRadius: 8,
+        backgroundColor: "#2563EB",
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 6,
+        marginBottom: 16,
+    },
+
+    addRouteButtonText: {
+        color: "#FFFFFF",
+        fontSize: 14,
+        fontWeight: "600",
+    },
+
+    routeNumberColumn: {
+        width: 90,
+    },
+
+    routeNameColumn: {
+        flex: 1,
+        paddingRight: 12,
+    },
+
+    driverColumn: {
+        flex: 1,
+        paddingRight: 12,
+    },
+
+    actionColumn: {
+        width: 50,
+        alignItems: "flex-end",
+    },
+
+    actionButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 6,
+        justifyContent: "center",
+        alignItems: "center",
+    },
 });
