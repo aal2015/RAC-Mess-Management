@@ -107,6 +107,23 @@ export default function AuthenticatedLayout() {
         />
 
         <Tabs.Screen
+          name="routes"
+          options={{
+            href: isAdmin
+              ? "/routes"
+              : null,
+            title: "Routes",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons
+                name="people"
+                size={size}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
           name="directory"
           options={{
             href: isUserOrDriver
@@ -136,7 +153,7 @@ export default function AuthenticatedLayout() {
             ), href: null
           }}
         />
-        
+
         <Tabs.Screen
           name="booking"
           options={{ href: null }}
