@@ -276,4 +276,93 @@ export const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
+
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.45)",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
+    },
+
+    modalContainer: {
+        width: "100%",
+        maxWidth: 480,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 12,
+        padding: 24,
+    },
+
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: "700",
+        color: "#111827",
+    },
+
+    modalSubtitle: {
+        fontSize: 13,
+        color: "#6B7280",
+        marginTop: 4,
+        marginBottom: 20,
+    },
+
+    inputGroup: {
+        marginBottom: 16,
+    },
+
+    inputLabel: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: "#374151",
+        marginBottom: 6,
+    },
+
+    input: {
+        height: 44,
+        borderWidth: 1,
+        borderColor: "#D1D5DB",
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        fontSize: 14,
+        color: "#111827",
+        backgroundColor: "#FFFFFF",
+    },
+
+    modalActions: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        gap: 10,
+        marginTop: 8,
+    },
+
+    cancelButton: {
+        height: 44,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: "#D1D5DB",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    cancelButtonText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#374151",
+    },
+
+    createButton: {
+        height: 44,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        backgroundColor: "#2563EB",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    createButtonText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#FFFFFF",
+    },
 });

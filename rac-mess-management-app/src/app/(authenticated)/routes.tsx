@@ -15,30 +15,21 @@ import {
     Route,
 } from "@/api/routes";
 
-import RouteUsersTable from "@/user/components/RouterUserTable";
-import RoutesTable from "@/user/components/RoutesTable";
+import RouteUsersTable from "@/routes/components/RouterUserTable";
+import RoutesTable from "@/routes/components/RoutesTable";
+import AddRouteModal from "@/routes/components/AddRouteModal";
 import { styles } from "../../user/styles/routes.styles";
 
 export default function RoutesScreen() {
     const { accessToken } = useAuth();
 
-    const [users, setUsers] =
-        useState<UserWithLocation[]>([]);
-
-    const [loadingUsers, setLoadingUsers] =
-        useState(true);
-
-    const [userError, setUserError] =
-        useState<string | null>(null);
-
-    const [routes, setRoutes] =
-        useState<Route[]>([]);
-
-    const [loadingRoutes, setLoadingRoutes] =
-        useState(true);
-
-    const [routeError, setRouteError] =
-        useState<string | null>(null);
+    const [users, setUsers] = useState<UserWithLocation[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(true);
+    const [userError, setUserError] = useState<string | null>(null);
+    const [routes, setRoutes] = useState<Route[]>([]);
+    const [loadingRoutes, setLoadingRoutes] = useState(true);
+    const [routeError, setRouteError] = useState<string | null>(null);
+    const [showAddRouteModal, setShowAddRouteModal] = useState(false);
 
     useEffect(() => {
         if (!accessToken) return;
@@ -123,9 +114,12 @@ export default function RoutesScreen() {
                     routes={routes}
                     loading={loadingRoutes}
                     error={routeError}
-                    onAddRoute={() => {
-                        // Add route later
-                    }}
+                    onAddRoute={() => setShowAddRouteModal(true)}
+                />
+
+                <AddRouteModal
+                    visible={showAddRouteModal}
+                    onClose={() => setShowAddRouteModal(false)}
                 />
             </ScrollView>
         </View>
