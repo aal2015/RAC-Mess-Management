@@ -65,7 +65,15 @@ def create_route(
     db.commit()
     db.refresh(route)
 
-    return route
+    return RouteResponse(
+        id=route.id,
+        battalion=route.battalion,
+        route_number=route.route_number,
+        name=route.name,
+        driver=None,
+        is_active=route.is_active,
+        created_at=route.created_at,
+    )
 
 @router.patch(
     "/{route_id}",
