@@ -5,51 +5,21 @@ import {
     TextInput,
     ScrollView,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import LogoutButton from "../../components/LogoutButton";
 import { styles } from "../../user/styles/routes.styles";
-
-type User = {
-    id: string;
-    username: string;
-    name: string;
-    location: string;
-    route: number | null;
-};
-
-const users: User[] = [
-    {
-        id: "1",
-        username: "P001",
-        name: "John",
-        location: "Panchsheel Enclave",
-        route: 1,
-    },
-    {
-        id: "2",
-        username: "P002",
-        name: "David",
-        location: "Saket",
-        route: null,
-    },
-    {
-        id: "3",
-        username: "P003",
-        name: "Amit",
-        location: "Malviya Nagar",
-        route: 2,
-    },
-    {
-        id: "4",
-        username: "P004",
-        name: "Rahul",
-        location: "Greater Kailash",
-        route: null,
-    },
-];
+import { getBattalionUsersWithLocations, UserWithLocation } from "@/api/users";
+import { useAuth } from "../../auth/AuthContext";
+import RouteUsersTable from "../../user/components/RouterUserTable";
 
 export default function RoutesScreen() {
+    const { accessToken } = useAuth();
+
+    const [users, setUsers] = useState<UserWithLocation[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(true);
+    const [userError, setUserError] = useState<string | null>(null);
+
     const [userFilter, setUserFilter] = useState<
         "assigned" | "unassigned"
     >("unassigned");
@@ -57,6 +27,10 @@ export default function RoutesScreen() {
     const [search, setSearch] = useState("");
 
     const filteredUsers = users.filter((user) => {
+        if (user.role !== "user") {
+            return false;
+        }
+
         const matchesFilter =
             userFilter === "assigned"
                 ? user.route !== null
@@ -66,12 +40,41 @@ export default function RoutesScreen() {
 
         const matchesSearch =
             !searchTerm ||
-            user.username.toLowerCase().includes(searchTerm) ||
             user.name.toLowerCase().includes(searchTerm) ||
-            user.location.toLowerCase().includes(searchTerm);
+            user.location?.road_name
+                ?.toLowerCase()
+                .includes(searchTerm);
 
         return matchesFilter && matchesSearch;
     });
+
+    useEffect(() => {
+        if (!accessToken) return;
+
+        const loadUsers = async () => {
+            try {
+                setLoadingUsers(true);
+                setUserError(null);
+
+                const data =
+                    await getBattalionUsersWithLocations(
+                        accessToken
+                    );
+                
+                setUsers(data);
+            } catch (error) {
+                setUserError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load users"
+                );
+            } finally {
+                setLoadingUsers(false);
+            }
+        };
+
+        loadUsers();
+    }, [accessToken]);
 
     return (
         <View style={styles.container}>
@@ -80,7 +83,6 @@ export default function RoutesScreen() {
                     styles.contentContainer
                 }
             >
-                {/* Header */}
                 <View style={styles.header}>
                     <View style={styles.headerText}>
                         <Text style={styles.title}>
@@ -91,209 +93,17 @@ export default function RoutesScreen() {
                             Manage users and routes
                         </Text>
                     </View>
-
-                    <LogoutButton />
                 </View>
 
-                {/* Users */}
-                <View style={styles.card}>
-                    <View style={styles.sectionHeader}>
-                        <View style={styles.sectionHeaderText}>
-                            <Text style={styles.label}>
-                                Users
-                            </Text>
+                <RouteUsersTable
+                    users={users}
+                    loading={loadingUsers}
+                    error={userError}
+                />
 
-                            <Text style={styles.sectionSubtitle}>
-                                Assign users to routes
-                            </Text>
-                        </View>
+                {/* RoutesTable will go here */}
 
-                        <Text style={styles.countText}>
-                            {filteredUsers.length} users
-                        </Text>
-                    </View>
-
-                    {/* Assigned / Unassigned */}
-                    <View style={styles.toggleRow}>
-                        <Pressable
-                            style={[
-                                styles.option,
-                                userFilter === "assigned" &&
-                                    styles.takingActive,
-                            ]}
-                            onPress={() =>
-                                setUserFilter("assigned")
-                            }
-                        >
-                            <Text
-                                style={[
-                                    styles.optionText,
-                                    userFilter === "assigned" &&
-                                        styles.whiteText,
-                                ]}
-                            >
-                                Assigned
-                            </Text>
-                        </Pressable>
-
-                        <Pressable
-                            style={[
-                                styles.option,
-                                userFilter === "unassigned" &&
-                                    styles.takingActive,
-                            ]}
-                            onPress={() =>
-                                setUserFilter("unassigned")
-                            }
-                        >
-                            <Text
-                                style={[
-                                    styles.optionText,
-                                    userFilter === "unassigned" &&
-                                        styles.whiteText,
-                                ]}
-                            >
-                                Unassigned
-                            </Text>
-                        </Pressable>
-                    </View>
-
-                    {/* Search */}
-                    <View style={styles.searchContainer}>
-                        <Ionicons
-                            name="search-outline"
-                            size={20}
-                            color="#6B7280"
-                        />
-
-                        <TextInput
-                            value={search}
-                            onChangeText={setSearch}
-                            placeholder="Search users..."
-                            placeholderTextColor="#9CA3AF"
-                            style={styles.searchInput}
-                        />
-                    </View>
-
-                    {/* Users table */}
-                    <View style={styles.table}>
-                        <View style={styles.tableHeader}>
-                            <Text
-                                style={[
-                                    styles.tableHeaderText,
-                                    styles.userColumn,
-                                ]}
-                            >
-                                User
-                            </Text>
-
-                            <Text
-                                style={[
-                                    styles.tableHeaderText,
-                                    styles.nameColumn,
-                                ]}
-                            >
-                                Name
-                            </Text>
-
-                            <Text
-                                style={[
-                                    styles.tableHeaderText,
-                                    styles.locationColumn,
-                                ]}
-                            >
-                                Location
-                            </Text>
-
-                            <Text
-                                style={[
-                                    styles.tableHeaderText,
-                                    styles.routeColumn,
-                                ]}
-                            >
-                                Route
-                            </Text>
-                        </View>
-
-                        {filteredUsers.length === 0 ? (
-                            <Text style={styles.emptyText}>
-                                No users found.
-                            </Text>
-                        ) : (
-                            filteredUsers.map((user) => (
-                                <View
-                                    key={user.id}
-                                    style={styles.tableRow}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.tableTextBold,
-                                            styles.userColumn,
-                                        ]}
-                                    >
-                                        {user.username}
-                                    </Text>
-
-                                    <Text
-                                        style={[
-                                            styles.tableText,
-                                            styles.nameColumn,
-                                        ]}
-                                    >
-                                        {user.name}
-                                    </Text>
-
-                                    <Text
-                                        style={[
-                                            styles.tableText,
-                                            styles.locationColumn,
-                                        ]}
-                                        numberOfLines={1}
-                                    >
-                                        {user.location}
-                                    </Text>
-
-                                    <View
-                                        style={
-                                            styles.routeColumn
-                                        }
-                                    >
-                                        {user.route !== null ? (
-                                            <View
-                                                style={
-                                                    styles.routeBadge
-                                                }
-                                            >
-                                                <Text
-                                                    style={
-                                                        styles.routeBadgeText
-                                                    }
-                                                >
-                                                    Route{" "}
-                                                    {user.route}
-                                                </Text>
-                                            </View>
-                                        ) : (
-                                            <Pressable
-                                                style={
-                                                    styles.assignButton
-                                                }
-                                            >
-                                                <Text
-                                                    style={
-                                                        styles.assignButtonText
-                                                    }
-                                                >
-                                                    Assign
-                                                </Text>
-                                            </Pressable>
-                                        )}
-                                    </View>
-                                </View>
-                            ))
-                        )}
-                    </View>
-                </View>
+                {/* RouteUsersTable will go here */}
             </ScrollView>
         </View>
     );

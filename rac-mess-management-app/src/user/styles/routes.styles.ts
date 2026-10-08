@@ -219,4 +219,17 @@ export const styles = StyleSheet.create({
         fontSize: 14,
         paddingVertical: 24,
     },
+
+    loadingContainer: {
+        paddingVertical: 24,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    errorText: {
+        color: "#DC2626",
+        fontSize: 14,
+        textAlign: "center",
+        paddingVertical: 16,
+    },
 });
