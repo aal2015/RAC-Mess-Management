@@ -13,6 +13,7 @@ import {
 import {
     getRoutes,
     Route,
+    createRoute
 } from "@/api/routes";
 
 import RouteUsersTable from "@/routes/components/RouterUserTable";
@@ -28,8 +29,46 @@ export default function RoutesScreen() {
     const [userError, setUserError] = useState<string | null>(null);
     const [routes, setRoutes] = useState<Route[]>([]);
     const [loadingRoutes, setLoadingRoutes] = useState(true);
+
     const [routeError, setRouteError] = useState<string | null>(null);
     const [showAddRouteModal, setShowAddRouteModal] = useState(false);
+    const [creatingRoute, setCreatingRoute] = useState(false);
+    const [createRouteError, setCreateRouteError] = useState<string | null>(null);
+
+    const handleCreateRoute = async (
+        routeNumber: number,
+        name: string
+    ) => {
+        if (!accessToken) return;
+        
+        try {
+            setCreatingRoute(true);
+            setCreateRouteError(null);
+
+            const newRoute = await createRoute(
+                accessToken,
+                {
+                    route_number: routeNumber,
+                    name,
+                }
+            );
+
+            setRoutes((currentRoutes) => [
+                ...currentRoutes,
+                newRoute,
+            ]);
+
+            setShowAddRouteModal(false);
+        } catch (error) {
+            setCreateRouteError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to create route"
+            );
+        } finally {
+            setCreatingRoute(false);
+        }
+    };
 
     useEffect(() => {
         if (!accessToken) return;
@@ -119,7 +158,15 @@ export default function RoutesScreen() {
 
                 <AddRouteModal
                     visible={showAddRouteModal}
-                    onClose={() => setShowAddRouteModal(false)}
+                    loading={creatingRoute}
+                    error={createRouteError}
+                    onClose={() => {
+                        if (creatingRoute) return;
+
+                        setCreateRouteError(null);
+                        setShowAddRouteModal(false);
+                    }}
+                    onSubmit={handleCreateRoute}
                 />
             </ScrollView>
         </View>

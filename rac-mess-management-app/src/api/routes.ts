@@ -38,3 +38,38 @@ export async function getRoutes(
 
     return response.json();
 }
+
+export type CreateRouteRequest = {
+    route_number: number;
+    name: string;
+};
+
+export async function createRoute(
+    accessToken: string,
+    request: CreateRouteRequest
+): Promise<Route> {
+    const response = await fetch(
+        `${API_URL}/admin/routes`,
+        {
+            method: "POST",
+            headers: {
+                Accept: "*/*",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(request),
+        }
+    );
+
+    if (!response.ok) {
+        const data = await response
+            .json()
+            .catch(() => null);
+
+        throw new Error(
+            data?.detail ?? "Failed to create route"
+        );
+    }
+
+    return response.json();
+}
