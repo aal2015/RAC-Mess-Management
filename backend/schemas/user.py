@@ -28,3 +28,21 @@ class UserResponse(BaseModel):
     is_active: bool
 
     model_config = {"from_attributes": True}
+
+class UserLocationResponse(BaseModel):
+    id: UUID
+    latitude: float
+    longitude: float
+    road_name: str | None
+
+
+class UserWithLocationResponse(BaseModel):
+    id: UUID
+    username: str
+    name: str
+    phone: str | None
+    role: str
+    battalion: str | None
+    bus: str | None
+    is_active: bool
+    location: UserLocationResponse | None

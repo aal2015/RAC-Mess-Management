@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 from api.deps import get_current_user
 from core.database import get_db
 from models.user import User
+from schemas.user import (
+    UserLocationResponse,
+    UserWithLocationResponse
+)
 from models.meal_booking import MealBooking
 from schemas.user import UserResponse
 from schemas.meal_booking import (
@@ -274,3 +278,51 @@ def get_user_location(
         )
 
     return location
+
+@router.get(
+    "/battalion/with-locations",
+    response_model=list[UserWithLocationResponse],
+)
+def get_battalion_users_with_locations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    users = (
+        db.query(User)
+        .filter(
+            User.battalion == current_user.battalion,
+        )
+        .all()
+    )
+
+    result = []
+
+    for user in users:
+        location = None
+
+        if user.location_id:
+            db_location = db.get(Location, user.location_id)
+
+            if db_location:
+                location = UserLocationResponse(
+                    id=db_location.id,
+                    latitude=db_location.latitude,
+                    longitude=db_location.longitude,
+                    road_name=db_location.road_name,
+                )
+
+        result.append(
+            UserWithLocationResponse(
+                id=user.id,
+                username=user.username,
+                name=user.name,
+                phone=user.phone,
+                role=user.role,
+                battalion=user.battalion,
+                bus=user.bus,
+                is_active=user.is_active,
+                location=location,
+            )
+        )
+
+    return result
