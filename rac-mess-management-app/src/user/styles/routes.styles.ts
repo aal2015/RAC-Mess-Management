@@ -127,7 +127,7 @@ export const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#E5E7EB",
         borderRadius: 8,
-        overflow: "hidden",
+        overflow: "visible",
     },
 
     tableHeader: {
@@ -136,6 +136,7 @@ export const styles = StyleSheet.create({
         backgroundColor: "#F8FAFC",
         paddingHorizontal: 12,
         paddingVertical: 12,
+        overflow: "visible",
     },
 
     tableHeaderText: {
@@ -153,6 +154,13 @@ export const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: "#E5E7EB",
         backgroundColor: "#FFFFFF",
+        position: "relative",
+        overflow: "visible",
+    },
+
+    activeMenuRow: {
+        zIndex: 1000,
+        elevation: 10,
     },
 
     userColumn: {
@@ -481,5 +489,63 @@ export const styles = StyleSheet.create({
         color: "#FFFFFF",
         fontSize: 14,
         fontWeight: "600",
+    },
+
+    actionContainer: {
+        position: "relative",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "visible",
+        zIndex: 1001,
+    },
+
+    actionButtonText: {
+        fontSize: 24,
+        color: "#374151",
+        lineHeight: 28,
+    },
+
+    actionMenu: {
+        position: "absolute",
+        top: 38,
+        right: 0,
+        width: 190,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        borderRadius: 8,
+        paddingVertical: 4,
+        zIndex: 1000,
+        elevation: 8,
+        shadowColor: "#000000",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+    },
+
+    actionMenuItem: {
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+    },
+
+    actionMenuText: {
+        fontSize: 14,
+        color: "#111827",
+    },
+
+    deleteActionText: {
+        fontSize: 14,
+        color: "#DC2626",
+    },
+
+    routesTableSection: {
+        position: "relative",
+        zIndex: 10,
+        overflow: "visible",
+    },
+
+    routeDetailsSection: {
+        position: "relative",
+        zIndex: 0,
     },
 });

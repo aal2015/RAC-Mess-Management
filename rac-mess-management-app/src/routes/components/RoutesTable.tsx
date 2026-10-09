@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     View,
     Text,
@@ -15,6 +16,9 @@ type RoutesTableProps = {
     error: string | null;
     onAddRoute: () => void;
     onSelectRoute: (route: Route) => void;
+    onAssignDriver: (route: Route) => void;
+    onEditRoute: (route: Route) => void;
+    onDeleteRoute: (route: Route) => void;
 };
 
 export default function RoutesTable({
@@ -23,7 +27,13 @@ export default function RoutesTable({
     error,
     onAddRoute,
     onSelectRoute,
+    onAssignDriver,
+    onEditRoute,
+    onDeleteRoute
 }: RoutesTableProps) {
+    const [activeMenuRouteId, setActiveMenuRouteId] =
+        useState<string | null>(null);
+
     return (
         <View style={styles.card}>
             <View style={styles.sectionHeader}>
@@ -113,8 +123,18 @@ export default function RoutesTable({
                         routes.map((route) => (
                             <Pressable
                                 key={route.id}
-                                style={styles.tableRow}
-                                onPress={() => onSelectRoute(route)}
+                                style={[
+                                    styles.tableRow,
+                                    activeMenuRouteId === route.id && styles.activeMenuRow,
+                                ]}
+                                onPress={() => {
+                                    if (activeMenuRouteId) {
+                                        setActiveMenuRouteId(null);
+                                        return;
+                                    }
+
+                                    onSelectRoute(route);
+                                }}
                             >
                                 <Text
                                     style={[
@@ -145,19 +165,61 @@ export default function RoutesTable({
                                     {route.driver?.name ?? "No driver"}
                                 </Text>
 
-                                <View style={styles.actionColumn}>
+                                <View style={styles.actionContainer}>
                                     <Pressable
                                         style={styles.actionButton}
                                         onPress={(event) => {
                                             event.stopPropagation();
+
+                                            setActiveMenuRouteId(
+                                                activeMenuRouteId === route.id
+                                                    ? null
+                                                    : route.id
+                                            );
                                         }}
                                     >
-                                        <Ionicons
-                                            name="ellipsis-vertical"
-                                            size={20}
-                                            color="#374151"
-                                        />
+                                        <Text style={styles.actionButtonText}>⋮</Text>
                                     </Pressable>
+
+                                    {activeMenuRouteId === route.id && (
+                                        <View style={styles.actionMenu}>
+                                            <Pressable
+                                                style={styles.actionMenuItem}
+                                                onPress={() => {
+                                                    setActiveMenuRouteId(null);
+                                                    onAssignDriver(route);
+                                                }}
+                                            >
+                                                <Text style={styles.actionMenuText}>
+                                                    Assign Driver
+                                                </Text>
+                                            </Pressable>
+
+                                            <Pressable
+                                                style={styles.actionMenuItem}
+                                                onPress={() => {
+                                                    setActiveMenuRouteId(null);
+                                                    onEditRoute(route);
+                                                }}
+                                            >
+                                                <Text style={styles.actionMenuText}>
+                                                    Edit Route Details
+                                                </Text>
+                                            </Pressable>
+
+                                            <Pressable
+                                                style={styles.actionMenuItem}
+                                                onPress={() => {
+                                                    setActiveMenuRouteId(null);
+                                                    onDeleteRoute(route);
+                                                }}
+                                            >
+                                                <Text style={styles.deleteActionText}>
+                                                    Delete Route
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+                                    )}
                                 </View>
                             </Pressable>
                         ))

@@ -93,6 +93,10 @@ export default function RoutesScreen() {
         }
     };
 
+    const handleAddRoute = () => {
+        setShowAddRouteModal(true);
+    };
+
     const loadUsers = async () => {
         if (!accessToken) return;
 
@@ -170,18 +174,24 @@ export default function RoutesScreen() {
                     onAssignUser={handleAssignUser}
                 />
 
-                <RoutesTable
-                    routes={routes}
-                    loading={loadingRoutes}
-                    error={routeError}
-                    onAddRoute={() => {
-                        setCreateRouteError(null);
-                        setShowAddRouteModal(true);
-                    }}
-                    onSelectRoute={(route) => {
-                        setSelectedRoute(route);
-                    }}
-                />
+                <View style={styles.routesTableSection}>
+                    <RoutesTable
+                        routes={routes}
+                        loading={loadingRoutes}
+                        error={routeError}
+                        onAddRoute={handleAddRoute}
+                        onSelectRoute={setSelectedRoute}
+                        onAssignDriver={(route) => {
+                            // Open the Assign Driver modal for this route.
+                        }}
+                        onEditRoute={(route) => {
+                            // Open the Edit Route modal with this route.
+                        }}
+                        onDeleteRoute={(route) => {
+                            // Show a confirmation before deleting this route.
+                        }}
+                    />
+                </View>
 
                 <AddRouteModal
                     visible={showAddRouteModal}
@@ -196,22 +206,24 @@ export default function RoutesScreen() {
                     onSubmit={handleCreateRoute}
                 />
 
-                {selectedRoute ? (
-                    <RouteDetails
-                        route={selectedRoute}
-                        users={users}
-                    />
-                ) : (
-                    <View style={styles.card}>
-                        <Text style={styles.label}>
-                            Route Details
-                        </Text>
+                <View style={styles.routeDetailsSection}>
+                    {selectedRoute ? (
+                        <RouteDetails
+                            route={selectedRoute}
+                            users={users}
+                        />
+                    ) : (
+                        <View style={styles.card}>
+                            <Text style={styles.label}>
+                                Route Details
+                            </Text>
 
-                        <Text style={styles.sectionSubtitle}>
-                            Select a route to view its users.
-                        </Text>
-                    </View>
-                )}
+                            <Text style={styles.sectionSubtitle}>
+                                Select a route to view its users.
+                            </Text>
+                        </View>
+                    )}
+                </View>
             </ScrollView>
 
             {assigningUser?.location && (
