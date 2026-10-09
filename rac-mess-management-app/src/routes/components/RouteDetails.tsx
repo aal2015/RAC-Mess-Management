@@ -2,6 +2,9 @@ import { View, Text } from "react-native";
 
 import { Route } from "@/api/routes";
 import { UserWithLocation } from "@/api/users";
+import RouteMap, {
+    type RouteMapLocation,
+} from "@/components/RouteMap";
 
 import RouteUsersTable from "./RouteUsersTable";
 import { styles } from "../../user/styles/routes.styles";
@@ -45,7 +48,7 @@ export default function RouteDetails({
                 </Text>
             </View>
 
-            <View style={styles.mapPlaceholder}>
+            {/* <View style={styles.mapPlaceholder}>
                 <Text style={styles.mapPlaceholderTitle}>
                     Map Coming Soon
                 </Text>
@@ -53,6 +56,25 @@ export default function RouteDetails({
                 <Text style={styles.mapPlaceholderText}>
                     Route locations will be displayed here.
                 </Text>
+            </View> */}
+
+            <View style={styles.routeMapContainer}>
+                <RouteMap
+                    locations={routeUsers
+                        .filter(
+                            (user) =>
+                                user.location !== null &&
+                                user.location !== undefined
+                        )
+                        .map((user): RouteMapLocation => ({
+                            id: user.id,
+                            name: user.name,
+                            username: user.username,
+                            latitude: user.location!.latitude,
+                            longitude: user.location!.longitude,
+                            road_name: user.location!.road_name,
+                        }))}
+                />
             </View>
 
             <View style={styles.routeUsersSection}>

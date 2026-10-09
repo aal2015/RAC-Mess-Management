@@ -686,4 +686,10 @@ export const styles = StyleSheet.create({
         marginTop: 12,
     },
 
+    routeMapContainer: {
+        marginTop: 16,
+        marginBottom: 16,
+        overflow: "hidden",
+        borderRadius: 8,
+    },
 });
