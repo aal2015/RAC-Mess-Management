@@ -108,3 +108,28 @@ export async function addLocationToRoute(
         );
     }
 }
+
+export async function removeLocationFromRoute(
+    accessToken: string,
+    routeNumber: number,
+    locationId: string
+): Promise<void> {
+    const response = await fetch(
+        `${API_URL}/admin/${routeNumber}/locations/${locationId}`,
+        {
+            method: "DELETE",
+            headers: {
+                Accept: "*/*",
+                Authorization: `Bearer ${accessToken}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => null);
+
+        throw new Error(
+            data?.detail ?? "Failed to unassign route"
+        );
+    }
+}

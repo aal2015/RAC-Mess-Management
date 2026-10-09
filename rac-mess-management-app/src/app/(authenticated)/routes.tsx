@@ -16,13 +16,15 @@ import {
     getRoutes,
     Route,
     createRoute,
-    addLocationToRoute
+    addLocationToRoute,
+    removeLocationFromRoute
 } from "@/api/routes";
 import AssignRouteModal from "@/routes/components/AssignRouteModal";
 
 import UsersTable from "@/routes/components/UserTable";
 import RoutesTable from "@/routes/components/RoutesTable";
 import AddRouteModal from "@/routes/components/AddRouteModal";
+import UnassignRouteModal from "@/routes/components/UnassignRouteModal";
 import RouteDetails from "@/routes/components/RouteDetails";
 import { styles } from "../../user/styles/routes.styles";
 
@@ -44,6 +46,12 @@ export default function RoutesScreen() {
     const [showAddRouteModal, setShowAddRouteModal] = useState(false);
     const [creatingRoute, setCreatingRoute] = useState(false);
     const [createRouteError, setCreateRouteError] = useState<string | null>(null);
+
+    const [unassigningUser, setUnassigningUser] =
+        useState<UserWithLocation | null>(null);
+    const [unassigning, setUnassigning] = useState(false);
+    const [unassignError, setUnassignError] =
+        useState<string | null>(null);
 
     const handleAssignUser = (
         user: UserWithLocation
@@ -95,6 +103,40 @@ export default function RoutesScreen() {
 
     const handleAddRoute = () => {
         setShowAddRouteModal(true);
+    };
+
+    const handleUnassignUser = (user: UserWithLocation) => {
+        setUnassignError(null);
+        setUnassigningUser(user);
+    };
+
+    const handleConfirmUnassign = async () => {
+        if (!accessToken || !unassigningUser?.location || !unassigningUser.route) {
+            return;
+        }
+
+        try {
+            setUnassigning(true);
+            setUnassignError(null);
+
+            await removeLocationFromRoute(
+                accessToken,
+                unassigningUser.route.route_number,
+                unassigningUser.location.id
+            );
+
+            await loadUsers();
+
+            setUnassigningUser(null);
+        } catch (error) {
+            setUnassignError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to unassign route"
+            );
+        } finally {
+            setUnassigning(false);
+        }
     };
 
     const loadUsers = async () => {
@@ -172,6 +214,7 @@ export default function RoutesScreen() {
                     loading={loadingUsers}
                     error={userError}
                     onAssignUser={handleAssignUser}
+                    onUnassignUser={handleUnassignUser}
                 />
 
                 <View style={styles.routesTableSection}>
@@ -274,6 +317,20 @@ export default function RoutesScreen() {
                     }}
                 />
             )}
+
+            <UnassignRouteModal
+                visible={unassigningUser !== null}
+                user={unassigningUser}
+                loading={unassigning}
+                error={unassignError}
+                onClose={() => {
+                    if (unassigning) return;
+
+                    setUnassigningUser(null);
+                    setUnassignError(null);
+                }}
+                onConfirm={handleConfirmUnassign}
+            />
 
             <Modal
                 visible={showLocationRequired}

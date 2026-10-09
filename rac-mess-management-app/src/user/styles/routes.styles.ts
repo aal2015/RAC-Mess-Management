@@ -548,4 +548,46 @@ export const styles = StyleSheet.create({
         position: "relative",
         zIndex: 0,
     },
+
+    routeAssignedContainer: {
+        alignItems: "flex-start",
+        gap: 6,
+    },
+
+    unassignButton: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderWidth: 1,
+        borderColor: "#FECACA",
+        borderRadius: 6,
+        backgroundColor: "#FEF2F2",
+    },
+
+    unassignButtonText: {
+        fontSize: 12,
+        fontWeight: "500",
+        color: "#B91C1C",
+    },
+
+    unassignWarning: {
+        fontSize: 13,
+        color: "#B91C1C",
+        marginTop: 12,
+    },
+
+    unassignConfirmButton: {
+        backgroundColor: "#DC2626",
+        borderRadius: 8,
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        alignItems: "center",
+        justifyContent: "center",
+        flex: 1,
+    },
+
+    unassignConfirmButtonText: {
+        color: "#FFFFFF",
+        fontSize: 14,
+        fontWeight: "600",
+    },
 });

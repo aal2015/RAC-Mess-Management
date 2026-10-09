@@ -20,6 +20,7 @@ type UsersTableProps = {
     onAssignUser: (
         user: UserWithLocation
     ) => void;
+    onUnassignUser: (user: UserWithLocation) => void;
 };
 
 export default function UsersTable({
@@ -28,6 +29,7 @@ export default function UsersTable({
     loading,
     error,
     onAssignUser,
+    onUnassignUser
 }: UsersTableProps) {
     const [userFilter, setUserFilter] = useState<
         "assigned" | "unassigned"
@@ -204,15 +206,21 @@ export default function UsersTable({
 
                                 <View style={styles.routeColumn}>
                                     {user.route !== null ? (
-                                        <View style={styles.routeBadge}>
-                                            <Text
-                                                style={
-                                                    styles.routeBadgeText
-                                                }
+                                        <View style={styles.routeAssignedContainer}>
+                                            <View style={styles.routeBadge}>
+                                                <Text style={styles.routeBadgeText}>
+                                                    Route {user.route.route_number}
+                                                </Text>
+                                            </View>
+
+                                            <Pressable
+                                                style={styles.unassignButton}
+                                                onPress={() => onUnassignUser(user)}
                                             >
-                                                Route{" "}
-                                                {user.route.route_number}
-                                            </Text>
+                                                <Text style={styles.unassignButtonText}>
+                                                    Unassign
+                                                </Text>
+                                            </Pressable>
                                         </View>
                                     ) : (
                                         <Pressable
