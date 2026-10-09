@@ -18,7 +18,8 @@ import {
     createRoute,
     addLocationToRoute,
     removeLocationFromRoute,
-    deleteRoute
+    deleteRoute,
+    updateRoute
 } from "@/api/routes";
 import AssignRouteModal from "@/routes/components/AssignRouteModal";
 
@@ -28,6 +29,9 @@ import AddRouteModal from "@/routes/components/AddRouteModal";
 import UnassignRouteModal from "@/routes/components/UnassignRouteModal";
 import RouteDetails from "@/routes/components/RouteDetails";
 import DeleteRouteModal from "@/routes/components/DeleteRouteModal";
+import AssignDriverModal, {
+    type Driver,
+} from "@/routes/components/AssignDriverModal";
 import { styles } from "../../user/styles/routes.styles";
 
 export default function RoutesScreen() {
@@ -56,6 +60,49 @@ export default function RoutesScreen() {
     const [deletingRoute, setDeletingRoute] = useState<Route | null>(null);
     const [isDeletingRoute, setIsDeletingRoute] = useState(false);
     const [deleteRouteError, setDeleteRouteError] = useState<string | null>(null);
+
+    const [assignDriverRoute, setAssignDriverRoute] =
+        useState<Route | null>(null);
+    const [drivers, setDrivers] = useState<Driver[]>([]);
+    const [loadingDrivers, setLoadingDrivers] = useState(false);
+    const [savingDriver, setSavingDriver] = useState(false);
+    const [assignDriverError, setAssignDriverError] =
+        useState<string | null>(null);
+
+    const handleAssignDriver = (route: Route) => {
+        setAssignDriverError(null);
+        setAssignDriverRoute(route);
+    };
+
+    const handleConfirmAssignDriver = async (
+        route: Route,
+        driver: Driver
+    ) => {
+        if (!accessToken) {
+            setAssignDriverError("You are not authenticated.");
+            return;
+        }
+
+        try {
+            setSavingDriver(true);
+            setAssignDriverError(null);
+
+            await updateRoute(accessToken, route.id, {
+                driver_username: driver.username,
+            });
+
+            await loadRoutes();
+            setAssignDriverRoute(null);
+        } catch (error) {
+            setAssignDriverError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to assign driver"
+            );
+        } finally {
+            setSavingDriver(false);
+        }
+    };
 
     const handleDeleteRoute = (route: Route) => {
         setDeleteRouteError(null);
@@ -183,7 +230,22 @@ export default function RoutesScreen() {
             setUserError(null);
 
             const data = await getBattalionUsersWithLocations(accessToken);
+
             setUsers(data);
+
+            setDrivers(
+                data
+                    .filter(
+                        (user) =>
+                            user.role === "driver" && user.is_active
+                    )
+                    .map((user) => ({
+                        id: user.id,
+                        username: user.username,
+                        name: user.name,
+                        phone: user.phone,
+                    }))
+            );
         } catch (error) {
             setUserError(
                 error instanceof Error
@@ -194,6 +256,10 @@ export default function RoutesScreen() {
             setLoadingUsers(false);
         }
     };
+
+    useEffect(() => {
+        loadUsers();
+    }, [accessToken]);
 
     useEffect(() => {
         loadUsers();
@@ -258,9 +324,7 @@ export default function RoutesScreen() {
                         error={routeError}
                         onAddRoute={handleAddRoute}
                         onSelectRoute={setSelectedRoute}
-                        onAssignDriver={(route) => {
-                            // Open the Assign Driver modal for this route.
-                        }}
+                        onAssignDriver={handleAssignDriver}
                         onEditRoute={(route) => {
                             // Open the Edit Route modal with this route.
                         }}
@@ -376,6 +440,22 @@ export default function RoutesScreen() {
                     setDeleteRouteError(null);
                 }}
                 onConfirm={handleConfirmDeleteRoute}
+            />
+
+            <AssignDriverModal
+                visible={assignDriverRoute !== null}
+                route={assignDriverRoute}
+                drivers={drivers}
+                loading={loadingDrivers}
+                saving={savingDriver}
+                error={assignDriverError}
+                onClose={() => {
+                    if (savingDriver) return;
+
+                    setAssignDriverRoute(null);
+                    setAssignDriverError(null);
+                }}
+                onConfirm={handleConfirmAssignDriver}
             />
 
             <Modal

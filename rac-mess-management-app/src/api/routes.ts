@@ -154,3 +154,35 @@ export async function deleteRoute(
         throw new Error(data?.detail ?? "Failed to delete route");
     }
 }
+
+export type UpdateRouteRequest = {
+    route_number?: number;
+    name?: string;
+    driver_username?: string;
+};
+
+export async function updateRoute(
+    accessToken: string,
+    routeId: string,
+    request: UpdateRouteRequest
+): Promise<Route> {
+    const response = await fetch(
+        `${API_URL}/admin/routes/${routeId}`,
+        {
+            method: "PATCH",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(request),
+        }
+    );
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.detail ?? "Failed to update route");
+    }
+
+    return response.json();
+}

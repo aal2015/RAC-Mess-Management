@@ -590,4 +590,100 @@ export const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "600",
     },
+
+    currentDriverContainer: {
+        backgroundColor: "#F3F4F6",
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 16,
+    },
+
+    currentDriverLabel: {
+        fontSize: 12,
+        color: "#6B7280",
+        marginBottom: 4,
+    },
+
+    currentDriverName: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#111827",
+    },
+
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#374151",
+        marginBottom: 8,
+    },
+
+    driverList: {
+        maxHeight: 260,
+    },
+
+    driverListContent: {
+        gap: 8,
+    },
+
+    driverOption: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        borderRadius: 8,
+        padding: 12,
+        backgroundColor: "#FFFFFF",
+    },
+
+    driverOptionSelected: {
+        borderColor: "#2563EB",
+        backgroundColor: "#EFF6FF",
+    },
+
+    driverInfo: {
+        flex: 1,
+        gap: 3,
+    },
+
+    driverName: {
+        fontSize: 14,
+        fontWeight: "500",
+        color: "#111827",
+    },
+
+    driverNameSelected: {
+        color: "#1D4ED8",
+    },
+
+    driverUsername: {
+        fontSize: 12,
+        color: "#6B7280",
+    },
+
+    driverPhone: {
+        fontSize: 12,
+        color: "#6B7280",
+    },
+
+    selectedLabel: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#2563EB",
+        marginLeft: 8,
+    },
+
+    loadingText: {
+        fontSize: 13,
+        color: "#6B7280",
+    },
+    reassignWarning: {
+        fontSize: 12,
+        color: "#92400E",
+        backgroundColor: "#FFFBEB",
+        padding: 10,
+        borderRadius: 6,
+        marginTop: 12,
+    },
+
 });
