@@ -8,19 +8,26 @@ import {
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
+import { Route } from "@/api/routes";
 import { UserWithLocation } from "@/api/users";
 import { styles } from "../../user/styles/routes.styles";
 
 type UsersTableProps = {
     users: UserWithLocation[];
+    routes: Route[];
     loading: boolean;
     error: string | null;
+    onAssignUser: (
+        user: UserWithLocation
+    ) => void;
 };
 
 export default function UsersTable({
     users,
+    routes,
     loading,
     error,
+    onAssignUser,
 }: UsersTableProps) {
     const [userFilter, setUserFilter] = useState<
         "assigned" | "unassigned"
@@ -210,12 +217,9 @@ export default function UsersTable({
                                     ) : (
                                         <Pressable
                                             style={styles.assignButton}
+                                            onPress={() => onAssignUser(user)}
                                         >
-                                            <Text
-                                                style={
-                                                    styles.assignButtonText
-                                                }
-                                            >
+                                            <Text style={styles.assignButtonText}>
                                                 Assign
                                             </Text>
                                         </Pressable>

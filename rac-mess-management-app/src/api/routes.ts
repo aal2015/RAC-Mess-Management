@@ -73,3 +73,38 @@ export async function createRoute(
 
     return response.json();
 }
+
+export type AddRouteLocationRequest = {
+    location_id: string;
+    stop_order?: number | null;
+};
+
+export async function addLocationToRoute(
+    accessToken: string,
+    routeNumber: number,
+    request: AddRouteLocationRequest
+): Promise<void> {
+    const response = await fetch(
+        `${API_URL}/admin/${routeNumber}/locations`,
+        {
+            method: "POST",
+            headers: {
+                Accept: "*/*",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(request),
+        }
+    );
+
+    if (!response.ok) {
+        const data = await response
+            .json()
+            .catch(() => null);
+
+        throw new Error(
+            data?.detail ??
+                "Failed to assign location to route"
+        );
+    }
+}

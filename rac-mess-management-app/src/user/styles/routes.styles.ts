@@ -407,4 +407,79 @@ export const styles = StyleSheet.create({
         color: "#111827",
         marginBottom: 12,
     },
+
+    routeOptions: {
+        gap: 8,
+        marginBottom: 8,
+    },
+
+    routeOption: {
+        minHeight: 56,
+        borderWidth: 1,
+        borderColor: "#D1D5DB",
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        justifyContent: "center",
+        backgroundColor: "#FFFFFF",
+    },
+
+    routeOptionTitle: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#111827",
+    },
+
+    routeOptionSubtitle: {
+        fontSize: 13,
+        color: "#6B7280",
+        marginTop: 2,
+    },
+
+    routeOptionSelected: {
+        borderColor: "#2563EB",
+        backgroundColor: "#EFF6FF",
+        borderWidth: 2,
+    },
+
+    routeOptionContent: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+    },
+
+    routeOptionTitleSelected: {
+        color: "#1D4ED8",
+    },
+
+    routeOptionSubtitleSelected: {
+        color: "#1D4ED8",
+    },
+
+    routeSelectedLabel: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#1D4ED8",
+    },
+
+    confirmButton: {
+        backgroundColor: "#2563EB",
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        alignItems: "center",
+        justifyContent: "center",
+        flex: 1,
+    },
+
+    confirmButtonDisabled: {
+        backgroundColor: "#9CA3AF",
+    },
+
+    confirmButtonText: {
+        color: "#FFFFFF",
+        fontSize: 14,
+        fontWeight: "600",
+    },
 });
