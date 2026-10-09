@@ -133,3 +133,24 @@ export async function removeLocationFromRoute(
         );
     }
 }
+
+export async function deleteRoute(
+    accessToken: string,
+    routeId: string
+): Promise<void> {
+    const response = await fetch(
+        `${API_URL}/admin/routes/${routeId}`,
+        {
+            method: "DELETE",
+            headers: {
+                Accept: "*/*",
+                Authorization: `Bearer ${accessToken}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.detail ?? "Failed to delete route");
+    }
+}

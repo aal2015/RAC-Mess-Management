@@ -17,7 +17,8 @@ import {
     Route,
     createRoute,
     addLocationToRoute,
-    removeLocationFromRoute
+    removeLocationFromRoute,
+    deleteRoute
 } from "@/api/routes";
 import AssignRouteModal from "@/routes/components/AssignRouteModal";
 
@@ -26,6 +27,7 @@ import RoutesTable from "@/routes/components/RoutesTable";
 import AddRouteModal from "@/routes/components/AddRouteModal";
 import UnassignRouteModal from "@/routes/components/UnassignRouteModal";
 import RouteDetails from "@/routes/components/RouteDetails";
+import DeleteRouteModal from "@/routes/components/DeleteRouteModal";
 import { styles } from "../../user/styles/routes.styles";
 
 export default function RoutesScreen() {
@@ -47,11 +49,45 @@ export default function RoutesScreen() {
     const [creatingRoute, setCreatingRoute] = useState(false);
     const [createRouteError, setCreateRouteError] = useState<string | null>(null);
 
-    const [unassigningUser, setUnassigningUser] =
-        useState<UserWithLocation | null>(null);
+    const [unassigningUser, setUnassigningUser] = useState<UserWithLocation | null>(null);
     const [unassigning, setUnassigning] = useState(false);
-    const [unassignError, setUnassignError] =
-        useState<string | null>(null);
+    const [unassignError, setUnassignError] = useState<string | null>(null);
+
+    const [deletingRoute, setDeletingRoute] = useState<Route | null>(null);
+    const [isDeletingRoute, setIsDeletingRoute] = useState(false);
+    const [deleteRouteError, setDeleteRouteError] = useState<string | null>(null);
+
+    const handleDeleteRoute = (route: Route) => {
+        setDeleteRouteError(null);
+        setDeletingRoute(route);
+    };
+
+    const handleConfirmDeleteRoute = async () => {
+        if (!accessToken || !deletingRoute) {
+            return;
+        }
+
+        try {
+            setIsDeletingRoute(true);
+            setDeleteRouteError(null);
+
+            await deleteRoute(accessToken, deletingRoute.id);
+
+            await loadRoutes();
+            await loadUsers();
+
+            setSelectedRoute(null);
+            setDeletingRoute(null);
+        } catch (error) {
+            setDeleteRouteError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to delete route"
+            );
+        } finally {
+            setIsDeletingRoute(false);
+        }
+    };
 
     const handleAssignUser = (
         user: UserWithLocation
@@ -163,29 +199,27 @@ export default function RoutesScreen() {
         loadUsers();
     }, [accessToken]);
 
-    useEffect(() => {
+    const loadRoutes = async () => {
         if (!accessToken) return;
 
-        const loadRoutes = async () => {
-            try {
-                setLoadingRoutes(true);
-                setRouteError(null);
+        try {
+            setLoadingRoutes(true);
+            setRouteError(null);
 
-                const data =
-                    await getRoutes(accessToken);
+            const data = await getRoutes(accessToken);
+            setRoutes(data);
+        } catch (error) {
+            setRouteError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to load routes"
+            );
+        } finally {
+            setLoadingRoutes(false);
+        }
+    };
 
-                setRoutes(data);
-            } catch (error) {
-                setRouteError(
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to load routes"
-                );
-            } finally {
-                setLoadingRoutes(false);
-            }
-        };
-
+    useEffect(() => {
         loadRoutes();
     }, [accessToken]);
 
@@ -230,9 +264,7 @@ export default function RoutesScreen() {
                         onEditRoute={(route) => {
                             // Open the Edit Route modal with this route.
                         }}
-                        onDeleteRoute={(route) => {
-                            // Show a confirmation before deleting this route.
-                        }}
+                        onDeleteRoute={handleDeleteRoute}
                     />
                 </View>
 
@@ -330,6 +362,20 @@ export default function RoutesScreen() {
                     setUnassignError(null);
                 }}
                 onConfirm={handleConfirmUnassign}
+            />
+
+            <DeleteRouteModal
+                visible={deletingRoute !== null}
+                route={deletingRoute}
+                loading={isDeletingRoute}
+                error={deleteRouteError}
+                onClose={() => {
+                    if (isDeletingRoute) return;
+
+                    setDeletingRoute(null);
+                    setDeleteRouteError(null);
+                }}
+                onConfirm={handleConfirmDeleteRoute}
             />
 
             <Modal
