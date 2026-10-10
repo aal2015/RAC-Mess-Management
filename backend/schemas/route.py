@@ -47,3 +47,9 @@ class RouteLocationResponse(BaseModel):
     stop_order: int | None
 
     model_config = {"from_attributes": True}
+
+
+class DriverRouteAssignmentResponse(BaseModel):
+    driver: RouteDriverResponse
+    route: RouteResponse | None
+    user_count: int
