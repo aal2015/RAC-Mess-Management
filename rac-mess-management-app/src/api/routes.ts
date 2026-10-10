@@ -186,3 +186,49 @@ export async function updateRoute(
 
     return response.json();
 }
+
+
+
+export type DriverRouteAssignment = {
+    driver: {
+        id: string;
+        username: string;
+        name: string;
+        phone: string | null;
+    };
+    route: Route | null;
+    route_user_count: number;
+    user_count: number;
+    lunch_count: number;
+    dinner_count: number;
+    book_date: string;
+};
+
+export async function getMyRouteAssignment(
+    accessToken: string,
+    bookDate?: string
+): Promise<DriverRouteAssignment> {
+    const query = bookDate
+        ? `?book_date=${encodeURIComponent(bookDate)}`
+        : "";
+
+    const response = await fetch(
+        `${API_URL}/routes/my-assignment${query}`,
+        {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(
+            data?.detail ?? "Failed to load your route assignment"
+        );
+    }
+
+    return response.json();
+}

@@ -24,6 +24,8 @@ export default function AuthenticatedLayout() {
   }
 
   const isAdmin = user?.role === "admin";
+  const isUser = user?.role === "user"
+  const isDriver = user?.role === "driver";
 
   const isUserOrDriver =
     user?.role === "user" ||
@@ -75,7 +77,7 @@ export default function AuthenticatedLayout() {
         <Tabs.Screen
           name="calendar"
           options={{
-            href: isUserOrDriver
+            href: isUser
               ? "/calendar"
               : null,
             title: "Calendar",
@@ -92,9 +94,8 @@ export default function AuthenticatedLayout() {
         <Tabs.Screen
           name="users"
           options={{
-            href: isAdmin
-              ? "/users"
-              : null,
+            href: isUserOrDriver
+              ? null :"/users",
             title: "Users",
             tabBarIcon: ({ color, size }) => (
               <Ionicons
@@ -133,6 +134,23 @@ export default function AuthenticatedLayout() {
             tabBarIcon: ({ color, size }) => (
               <Ionicons
                 name="book"
+                size={size}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="delivery"
+          options={{
+            href: isDriver
+              ? "/delivery"
+              : null,
+            title: "Delivery",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons
+                name="navigate"
                 size={size}
                 color={color}
               />
