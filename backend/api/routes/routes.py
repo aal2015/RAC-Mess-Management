@@ -85,7 +85,8 @@ def get_my_route_bookings(
             User,
             Location,
             RouteLocation.stop_order,
-            delivered_column.label("is_delivered"),
+            MealBooking.lunch_delivered,
+            MealBooking.dinner_delivered,
         )
         .join(
             Location,
@@ -127,9 +128,16 @@ def get_my_route_bookings(
                 road_name=location.road_name,
             ),
             stop_order=stop_order,
-            is_delivered=is_delivered,
+            lunch_delivered=lunch_delivered,
+            dinner_delivered=dinner_delivered,
         )
-        for user, location, stop_order, is_delivered in rows
+        for (
+            user,
+            location,
+            stop_order,
+            lunch_delivered,
+            dinner_delivered,
+        ) in rows
     ]
 
     return RouteMealBookingsResponse(
@@ -139,7 +147,13 @@ def get_my_route_bookings(
         route_name=route.name,
         total_bookings=len(bookings),
         delivered_count=sum(
-            1 for booking in bookings if booking.is_delivered
+            1
+            for booking in bookings
+            if (
+                booking.lunch_delivered
+                if meal_type == "lunch"
+                else booking.dinner_delivered
+            )
         ),
         bookings=bookings,
     )

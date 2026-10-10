@@ -19,7 +19,8 @@ class DeliveryUserResponse(BaseModel):
     phone: str | None
     location: DeliveryLocationResponse
     stop_order: int | None
-    is_delivered: bool
+    lunch_delivered: bool
+    dinner_delivered: bool
 
 
 class RouteMealBookingsResponse(BaseModel):
