@@ -1,4 +1,4 @@
-
+import { useState } from "react";
 import {
     View,
     Text,
@@ -6,10 +6,23 @@ import {
     ActivityIndicator,
     StyleSheet,
 } from "react-native";
+import ActiveDelivery from "@/app/(authenticated)/driver/active-delivery";
 import { Ionicons } from "@expo/vector-icons";
 
-export type MealType = "lunch" | "dinner";
+type MealType = "lunch" | "dinner";
 
+type ActiveDeliveryProps = {
+    routeNumber: number | null;
+    routeUserCount: number;
+    userCount: number;
+    lunchCount: number;
+    dinnerCount: number;
+    bookDate: string;
+    selectedMeal: MealType;
+    onSelectMeal: (meal: MealType) => void;
+    loading: boolean;
+    onBack: () => void;
+};
 type DeliveryScreenProps = {
     routeNumber: number | null;
     routeUserCount: number;
@@ -49,6 +62,24 @@ export default function DeliveryScreen({
     const hasRoute = routeNumber !== null;
     const hasDeliveries = userCount > 0;
     const canStart = hasRoute && hasDeliveries && !loading;
+    const [deliveryStarted, setDeliveryStarted] = useState(false);
+
+    if (deliveryStarted) {
+        return (
+            <ActiveDelivery
+                routeNumber={routeNumber}
+                routeUserCount={routeUserCount}
+                userCount={userCount}
+                lunchCount={lunchCount}
+                dinnerCount={dinnerCount}
+                bookDate={bookDate}
+                selectedMeal={selectedMeal}
+                onSelectMeal={onSelectMeal}
+                loading={loading}
+                onBack={() => setDeliveryStarted(false)}
+            />
+        );
+    }
 
     return (
         <View style={styles.container}>

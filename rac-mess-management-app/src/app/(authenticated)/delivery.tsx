@@ -8,9 +8,8 @@ import {
     type DriverRouteAssignment,
 } from "@/api/routes";
 
-import DeliveryScreen, {
-    type MealType,
-} from "@/user/screens/DeliveryScreen";
+import DeliveryScreen from "@/user/screens/DeliveryScreen";
+import { MealType } from "./driver/active-delivery";
 import { styles } from "../../user/styles/delivery.styles";
 import LogoutButton from "../../components/LogoutButton";
 
