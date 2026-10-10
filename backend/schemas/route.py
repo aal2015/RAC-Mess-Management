@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -52,4 +52,8 @@ class RouteLocationResponse(BaseModel):
 class DriverRouteAssignmentResponse(BaseModel):
     driver: RouteDriverResponse
     route: RouteResponse | None
+    route_user_count: int
     user_count: int
+    lunch_count: int
+    dinner_count: int
+    book_date: date

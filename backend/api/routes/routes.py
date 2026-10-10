@@ -1,16 +1,18 @@
 # api/routes/routes.py
 
+from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from api.deps import get_current_user
 from core.database import get_db
+from models.location import Location
+from models.meal_booking import MealBooking
 from models.route import Route
 from models.route_location import RouteLocation
-from models.location import Location
 from models.user import User
 from schemas.route import (
     RouteResponse,
@@ -26,6 +28,7 @@ router = APIRouter(prefix="/routes", tags=["Routes"])
     response_model=DriverRouteAssignmentResponse,
 )
 def get_my_route_assignment(
+    book_date: date | None = Query(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -41,6 +44,15 @@ def get_my_route_assignment(
             detail="Driver is not assigned to a battalion",
         )
 
+    target_date = book_date or date.today()
+
+    driver_response = RouteDriverResponse(
+        id=current_user.id,
+        username=current_user.username,
+        name=current_user.name,
+        phone=current_user.phone,
+    )
+
     route = (
         db.query(Route)
         .filter(
@@ -53,22 +65,19 @@ def get_my_route_assignment(
 
     if not route:
         return DriverRouteAssignmentResponse(
-            driver=RouteDriverResponse(
-                id=current_user.id,
-                username=current_user.username,
-                name=current_user.name,
-                phone=current_user.phone,
-            ),
+            driver=driver_response,
             route=None,
+            route_user_count=0,
             user_count=0,
+            lunch_count=0,
+            dinner_count=0,
+            book_date=target_date,
         )
 
-    user_count = (
+    # Count all active users assigned to this route.
+    route_user_count = (
         db.query(func.count(func.distinct(User.id)))
-        .join(
-            Location,
-            User.location_id == Location.id,
-        )
+        .join(Location, User.location_id == Location.id)
         .join(
             RouteLocation,
             RouteLocation.location_id == Location.id,
@@ -80,30 +89,73 @@ def get_my_route_assignment(
             User.is_active.is_(True),
         )
         .scalar()
+    ) or 0
+
+    # Count bookings for the selected date.
+    counts = (
+        db.query(
+            func.count(
+                func.distinct(
+                    case(
+                        (
+                            (MealBooking.lunch.is_(True))
+                            | (MealBooking.dinner.is_(True)),
+                            User.id,
+                        )
+                    )
+                )
+            ).label("user_count"),
+            func.count(
+                func.distinct(
+                    case(
+                        (MealBooking.lunch.is_(True), User.id)
+                    )
+                )
+            ).label("lunch_count"),
+            func.count(
+                func.distinct(
+                    case(
+                        (MealBooking.dinner.is_(True), User.id)
+                    )
+                )
+            ).label("dinner_count"),
+        )
+        .select_from(User)
+        .join(Location, User.location_id == Location.id)
+        .join(
+            RouteLocation,
+            RouteLocation.location_id == Location.id,
+        )
+        .join(
+            MealBooking,
+            MealBooking.user_id == User.id,
+        )
+        .filter(
+            RouteLocation.route_id == route.id,
+            User.battalion == current_user.battalion,
+            User.role == "user",
+            User.is_active.is_(True),
+            MealBooking.book_date == target_date,
+        )
+        .one()
     )
 
     return DriverRouteAssignmentResponse(
-        driver=RouteDriverResponse(
-            id=current_user.id,
-            username=current_user.username,
-            name=current_user.name,
-            phone=current_user.phone,
-        ),
+        driver=driver_response,
         route=RouteResponse(
             id=route.id,
             battalion=route.battalion,
             route_number=route.route_number,
             name=route.name,
-            driver=RouteDriverResponse(
-                id=current_user.id,
-                username=current_user.username,
-                name=current_user.name,
-                phone=current_user.phone,
-            ),
+            driver=driver_response,
             is_active=route.is_active,
             created_at=route.created_at,
         ),
-        user_count=user_count or 0,
+        route_user_count=route_user_count,
+        user_count=counts.user_count,
+        lunch_count=counts.lunch_count,
+        dinner_count=counts.dinner_count,
+        book_date=target_date,
     )
 
 @router.get("/{route_id}", response_model=RouteResponse)
