@@ -2,6 +2,7 @@
 
 from datetime import date
 from uuid import UUID
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import case, func
@@ -20,8 +21,128 @@ from schemas.route import (
     RouteDriverResponse,
     DriverRouteAssignmentResponse,
 )
+from schemas.delivery import (
+    DeliveryLocationResponse,
+    DeliveryUserResponse,
+    RouteMealBookingsResponse,
+)
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
+
+@router.get(
+    "/my-assignment/bookings",
+    response_model=RouteMealBookingsResponse,
+)
+def get_my_route_bookings(
+    book_date: date = Query(default_factory=date.today),
+    meal_type: Literal["lunch", "dinner"] = Query(default="lunch"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "driver":
+        raise HTTPException(
+            status_code=403,
+            detail="Only drivers can access this endpoint",
+        )
+
+    if not current_user.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Driver is not assigned to a battalion",
+        )
+
+    route = (
+        db.query(Route)
+        .filter(
+            Route.driver_id == current_user.id,
+            Route.battalion == current_user.battalion,
+            Route.is_active.is_(True),
+        )
+        .first()
+    )
+
+    if not route:
+        raise HTTPException(
+            status_code=404,
+            detail="No active route assigned to this driver",
+        )
+
+    # Select the appropriate booking and delivery-status columns.
+    meal_column = (
+        MealBooking.lunch
+        if meal_type == "lunch"
+        else MealBooking.dinner
+    )
+
+    delivered_column = (
+        MealBooking.lunch_delivered
+        if meal_type == "lunch"
+        else MealBooking.dinner_delivered
+    )
+
+    rows = (
+        db.query(
+            User,
+            Location,
+            RouteLocation.stop_order,
+            delivered_column.label("is_delivered"),
+        )
+        .join(
+            Location,
+            User.location_id == Location.id,
+        )
+        .join(
+            RouteLocation,
+            RouteLocation.location_id == Location.id,
+        )
+        .join(
+            MealBooking,
+            MealBooking.user_id == User.id,
+        )
+        .filter(
+            RouteLocation.route_id == route.id,
+            User.battalion == current_user.battalion,
+            User.role == "user",
+            User.is_active.is_(True),
+            MealBooking.book_date == book_date,
+            meal_column.is_(True),
+        )
+        .order_by(
+            RouteLocation.stop_order.asc().nulls_last(),
+            User.name,
+        )
+        .all()
+    )
+
+    bookings = [
+        DeliveryUserResponse(
+            id=user.id,
+            username=user.username,
+            name=user.name,
+            phone=user.phone,
+            location=DeliveryLocationResponse(
+                id=location.id,
+                latitude=location.latitude,
+                longitude=location.longitude,
+                road_name=location.road_name,
+            ),
+            stop_order=stop_order,
+            is_delivered=is_delivered,
+        )
+        for user, location, stop_order, is_delivered in rows
+    ]
+
+    return RouteMealBookingsResponse(
+        book_date=book_date,
+        meal_type=meal_type,
+        route_number=route.route_number,
+        route_name=route.name,
+        total_bookings=len(bookings),
+        delivered_count=sum(
+            1 for booking in bookings if booking.is_delivered
+        ),
+        bookings=bookings,
+    )
 
 @router.get(
     "/my-assignment",
