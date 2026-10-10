@@ -56,3 +56,15 @@ class MealBooking(Base):
             name="meal_bookings_user_id_book_date_key",
         ),
     )
+
+    lunch_delivered = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    dinner_delivered = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
