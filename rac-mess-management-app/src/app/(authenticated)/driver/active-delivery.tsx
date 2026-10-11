@@ -425,7 +425,7 @@ export default function ActiveDelivery() {
             </Text>
 
             {/* Map placeholder for future Directions API integration. */}
-            <View
+            {/* <View
                 style={{
                     minHeight: 260,
                     borderRadius: 12,
@@ -435,7 +435,7 @@ export default function ActiveDelivery() {
                 }}
             >
                 <Text>Map will go here</Text>
-            </View>
+            </View> */}
             <ActiveDeliveryMap
                 driverLocation={driverLocation}
                 locations={bookings

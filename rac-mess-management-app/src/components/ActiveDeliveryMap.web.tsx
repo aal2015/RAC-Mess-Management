@@ -88,6 +88,19 @@ export default function ActiveDeliveryMap({
     const [status, setStatus] = useState("Loading map...");
     const [error, setError] = useState<string | null>(null);
 
+    const [routeCoordinates, setRouteCoordinates] = useState<
+        [number, number][] | null
+    >(null);
+
+    const [routeError, setRouteError] = useState<string | null>(null);
+    const [routeLoading, setRouteLoading] = useState(false);
+
+    const [mapReady, setMapReady] = useState(false);
+
+    const selectedLocation = locations.find(
+        (location) => location.id === selectedLocationId
+    );
+
     renderMapRef.current = () => {
         const map = mapRef.current;
 
@@ -218,6 +231,95 @@ export default function ActiveDeliveryMap({
         );
     };
 
+    useEffect(() => {
+        let cancelled = false;
+
+        async function fetchRoute() {
+            setRouteCoordinates(null);
+            setRouteError(null);
+
+            if (!driverLocation || !selectedLocation) {
+                setRouteLoading(false);
+                return;
+            }
+
+            const apiKey =
+                process.env.EXPO_PUBLIC_LOCATIONIQ_KEY ??
+                process.env.EXPO_PUBLIC_LOCATIONIQ_MAP_TOKEN;
+
+            if (!apiKey) {
+                setRouteError("LocationIQ API key is missing.");
+                setRouteLoading(false);
+                return;
+            }
+
+            setRouteLoading(true);
+
+            try {
+                const coordinates = [
+                    `${driverLocation.longitude},${driverLocation.latitude}`,
+                    `${selectedLocation.longitude},${selectedLocation.latitude}`,
+                ].join(";");
+
+                const params = new URLSearchParams({
+                    key: apiKey,
+                    overview: "full",
+                    geometries: "geojson",
+                });
+
+                const url =
+                    `https://us1.locationiq.com/v1/directions/driving/` +
+                    `${coordinates}?${params.toString()}`;
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Directions request failed (${response.status}).`
+                    );
+                }
+
+                const data = await response.json();
+
+                const route = data.routes?.[0]?.geometry?.coordinates;
+
+                if (!Array.isArray(route) || route.length < 2) {
+                    throw new Error("No driving route was found.");
+                }
+
+                if (!cancelled) {
+                    setRouteCoordinates(
+                        route as [number, number][]
+                    );
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setRouteError(
+                        error instanceof Error
+                            ? error.message
+                            : "Failed to fetch the driving route."
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setRouteLoading(false);
+                }
+            }
+        }
+
+        fetchRoute();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        driverLocation?.latitude,
+        driverLocation?.longitude,
+        selectedLocation?.id,
+        selectedLocation?.latitude,
+        selectedLocation?.longitude,
+    ]);
+
     // Initialize the map once.
     useEffect(() => {
         if (!mapContainer.current) return;
@@ -289,6 +391,7 @@ export default function ActiveDeliveryMap({
                     if (cancelled) return;
 
                     mapLoadedRef.current = true;
+                    setMapReady(true);
                     setError(null);
                     renderMapRef.current?.();
                 });
@@ -318,6 +421,7 @@ export default function ActiveDeliveryMap({
 
         return () => {
             cancelled = true;
+            setMapReady(false);
             mapLoadedRef.current = false;
 
             markersRef.current.forEach((marker) => marker.remove());
@@ -327,6 +431,49 @@ export default function ActiveDeliveryMap({
             mapRef.current = null;
         };
     }, []);
+
+    useEffect(() => {
+        const map = mapRef.current;
+
+        if (!map || !mapReady) return;
+
+        const sourceId = "active-delivery-route";
+
+        const feature = {
+            type: "Feature" as const,
+            properties: {},
+            geometry: {
+                type: "LineString" as const,
+                coordinates: routeCoordinates ?? [],
+            },
+        };
+
+        const existingSource = map.getSource(sourceId);
+
+        if (existingSource) {
+            existingSource.setData(feature);
+        } else {
+            map.addSource(sourceId, {
+                type: "geojson",
+                data: feature,
+            });
+
+            map.addLayer({
+                id: "active-delivery-route-line",
+                type: "line",
+                source: sourceId,
+                layout: {
+                    "line-join": "round",
+                    "line-cap": "round",
+                },
+                paint: {
+                    "line-color": "#2563EB",
+                    "line-width": 5,
+                    "line-opacity": 0.85,
+                },
+            });
+        }
+    }, [routeCoordinates, mapReady]);
 
     // Refresh markers when the driver, destinations, or selection changes.
     useEffect(() => {
@@ -340,6 +487,18 @@ export default function ActiveDeliveryMap({
             {error && (
                 <Text style={{ color: "#DC2626" }}>
                     {error}
+                </Text>
+            )}
+
+            {routeLoading && (
+                <Text style={{ color: "#6B7280", fontSize: 12 }}>
+                    Calculating driving route...
+                </Text>
+            )}
+
+            {routeError && (
+                <Text style={{ color: "#DC2626", fontSize: 12 }}>
+                    {routeError}
                 </Text>
             )}
 
