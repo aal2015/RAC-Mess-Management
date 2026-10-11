@@ -32,6 +32,7 @@ export default function Delivery() {
     const [error, setError] = useState<string | null>(null);
 
     const [today] = useState(getLocalDateString);
+    
 
     const [selectedMeal, setSelectedMeal] =
         useState<MealType>("lunch");
@@ -51,7 +52,7 @@ export default function Delivery() {
                 accessToken,
                 today
             );
-
+              
             setAssignment(data);
         } catch (err) {
             setError(

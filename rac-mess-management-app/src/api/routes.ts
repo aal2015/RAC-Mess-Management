@@ -232,3 +232,72 @@ export async function getMyRouteAssignment(
 
     return response.json();
 }
+
+export type DeliveryLocationResponse = {
+    id: string;
+    latitude: number;
+    longitude: number;
+    road_name: string | null;
+};
+
+export type DeliveryUserResponse = {
+    id: string;
+    username: string;
+    name: string;
+    phone: string | null;
+    location: DeliveryLocationResponse;
+    stop_order: number | null;
+    lunch_delivered: boolean;
+    dinner_delivered: boolean;
+};
+
+export type RouteMealBookingsResponse = {
+    book_date: string;
+    meal_type: "lunch" | "dinner";
+    route_number: number;
+    route_name: string;
+    total_bookings: number;
+    delivered_count: number;
+    bookings: DeliveryUserResponse[];
+};
+
+export async function getMyRouteBookings(
+    accessToken: string,
+    bookDate: string,
+    mealType: "lunch" | "dinner",
+): Promise<RouteMealBookingsResponse> {
+    const params = new URLSearchParams({
+        book_date: bookDate,
+        meal_type: mealType,
+    });
+
+    const response = await fetch(
+        `${API_URL}/routes/my-assignment/bookings?${params.toString()}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        },
+    );
+
+    if (!response.ok) {
+        let message = `Failed to fetch route bookings (${response.status})`;
+
+        try {
+            const errorData = await response.json();
+            if (errorData.detail) {
+                message =
+                    typeof errorData.detail === "string"
+                        ? errorData.detail
+                        : message;
+            }
+        } catch {
+            // Keep the default error message.
+        }
+
+        throw new Error(message);
+    }
+
+    return response.json() as Promise<RouteMealBookingsResponse>;
+}

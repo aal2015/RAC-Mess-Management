@@ -64,6 +64,8 @@ export default function DeliveryScreen({
     const canStart = hasRoute && hasDeliveries && !loading;
     const [deliveryStarted, setDeliveryStarted] = useState(false);
 
+    console.log("Parent bookDate:", bookDate);
+
     if (deliveryStarted) {
         return (
             <ActiveDelivery
@@ -222,7 +224,9 @@ export default function DeliveryScreen({
                 accessibilityRole="button"
                 accessibilityState={{ disabled: !canStart }}
                 disabled={!canStart}
-                onPress={onStartDelivery}
+                onPress={() => {
+                    setDeliveryStarted(true);
+                }}
                 style={({ pressed }) => [
                     styles.startButton,
                     !canStart && styles.startButtonDisabled,

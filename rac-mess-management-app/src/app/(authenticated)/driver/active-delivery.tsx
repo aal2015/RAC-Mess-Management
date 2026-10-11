@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
     View,
@@ -9,6 +9,8 @@ import {
     StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { getMyRouteBookings, DeliveryUserResponse } from "@/api/routes";
+import { useAuth } from "@/auth/AuthContext";
 
 export type MealType = "lunch" | "dinner";
 
@@ -85,32 +87,97 @@ export default function ActiveDelivery({
     loading,
     onBack,
 }: ActiveDeliveryProps) {
-    const router = useRouter();
+    // const router = useRouter();
+    // const [bookings, setBookings] =
+    //     useState<Booking[]>(SAMPLE_BOOKINGS);
+    console.log(bookDate);
+    
+
+    const { accessToken } = useAuth();
 
     const [bookings, setBookings] =
-        useState<Booking[]>(SAMPLE_BOOKINGS);
+        useState<DeliveryUserResponse[]>([]);
 
-    const pendingBookings = useMemo(
-        () =>
-            bookings
-                .filter((booking) => !booking.delivered)
-                .sort((a, b) => a.distanceKm - b.distanceKm),
-        [bookings]
+    const [bookingsLoading, setBookingsLoading] = useState(false);
+    const [bookingsError, setBookingsError] = useState<string | null>(
+        null
     );
 
-    const deliveredCount = bookings.filter(
-        (booking) => booking.delivered
-    ).length;
+    useEffect(() => {
+        let cancelled = false;
+
+        async function fetchBookings() {
+            if (!accessToken) return;
+
+            setBookingsLoading(true);
+            setBookingsError(null);
+
+            try {
+                const data = await getMyRouteBookings(
+                    accessToken,
+                    bookDate,
+                    selectedMeal
+                );
+
+                console.log(data.bookings);
+                
+                if (!cancelled) {
+                    setBookings(data.bookings);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    console.error("Failed to fetch bookings:", error);
+                    setBookingsError(
+                        error instanceof Error
+                            ? error.message
+                            : "Failed to fetch bookings."
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setBookingsLoading(false);
+                }
+            }
+        }
+
+        fetchBookings();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [accessToken, bookDate, selectedMeal]);
+
+    const isDelivered = (booking: DeliveryUserResponse) =>
+        selectedMeal === "lunch"
+            ? booking.lunch_delivered
+            : booking.dinner_delivered;
+
+    const pendingBookings = useMemo(
+        () => bookings.filter((booking) => !isDelivered(booking)),
+        [bookings, selectedMeal]
+    );
+
+    const deliveredCount = useMemo(
+        () => bookings.filter(isDelivered).length,
+        [bookings, selectedMeal]
+    );
 
     const nextBooking = pendingBookings[0];
 
     function markDelivered() {
         if (!nextBooking) return;
 
+        // Local-only update for now; connect this to your
+        // backend delivery-status endpoint when available.
         setBookings((current) =>
             current.map((booking) =>
                 booking.id === nextBooking.id
-                    ? { ...booking, delivered: true }
+                    ? {
+                        ...booking,
+                        ...(selectedMeal === "lunch"
+                            ? { lunch_delivered: true }
+                            : { dinner_delivered: true }),
+                    }
                     : booking
             )
         );
@@ -147,7 +214,7 @@ export default function ActiveDelivery({
                     style={[
                         styles.mealBadge,
                         selectedMeal === "dinner" &&
-                            styles.dinnerBadge,
+                        styles.dinnerBadge,
                     ]}
                 >
                     <Ionicons
@@ -167,7 +234,7 @@ export default function ActiveDelivery({
             </View>
 
             {/* Scrollable booking list with fixed height */}
-            <View style={styles.bookingSection}>
+            {/* <View style={styles.bookingSection}>
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>
                         Meal Bookings
@@ -190,7 +257,7 @@ export default function ActiveDelivery({
                                     style={[
                                         styles.numberCircle,
                                         item.delivered &&
-                                            styles.deliveredCircle,
+                                        styles.deliveredCircle,
                                     ]}
                                 >
                                     {item.delivered ? (
@@ -211,7 +278,7 @@ export default function ActiveDelivery({
                                         style={[
                                             styles.bookingName,
                                             item.delivered &&
-                                                styles.completedText,
+                                            styles.completedText,
                                         ]}
                                     >
                                         {item.name}
@@ -232,25 +299,25 @@ export default function ActiveDelivery({
                                         item.delivered
                                             ? styles.statusDone
                                             : item.id === nextBooking?.id
-                                              ? styles.statusNext
-                                              : styles.statusPending,
+                                                ? styles.statusNext
+                                                : styles.statusPending,
                                     ]}
                                 >
                                     <Text
                                         style={[
                                             styles.statusText,
                                             item.delivered &&
-                                                styles.statusDoneText,
+                                            styles.statusDoneText,
                                             !item.delivered &&
-                                                item.id === nextBooking?.id &&
-                                                styles.statusNextText,
+                                            item.id === nextBooking?.id &&
+                                            styles.statusNextText,
                                         ]}
                                     >
                                         {item.delivered
                                             ? "Delivered"
                                             : item.id === nextBooking?.id
-                                              ? "Next"
-                                              : "Pending"}
+                                                ? "Next"
+                                                : "Pending"}
                                     </Text>
                                 </View>
                             </View>
@@ -262,7 +329,7 @@ export default function ActiveDelivery({
                         }
                     />
                 </View>
-            </View>
+            </View> */}
 
             {/* Current delivery action */}
             <View style={styles.actionSection}>
