@@ -9,7 +9,7 @@ import {
 } from "@/api/routes";
 
 import DeliveryScreen from "@/user/screens/DeliveryScreen";
-import { MealType } from "./driver/active-delivery";
+import { MealType } from "@/user/screens/DeliveryScreen";
 import { styles } from "../../user/styles/delivery.styles";
 import LogoutButton from "../../components/LogoutButton";
 
@@ -22,17 +22,18 @@ function getLocalDateString() {
     return `${year}-${month}-${day}`;
 }
 
+
 export default function Delivery() {
     const router = useRouter();
     const { accessToken } = useAuth();
 
     const [assignment, setAssignment] =
         useState<DriverRouteAssignment | null>(null);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const [today] = useState(getLocalDateString);
-    
 
     const [selectedMeal, setSelectedMeal] =
         useState<MealType>("lunch");
@@ -50,15 +51,15 @@ export default function Delivery() {
 
             const data = await getMyRouteAssignment(
                 accessToken,
-                today
+                today,
             );
-              
+
             setAssignment(data);
         } catch (err) {
             setError(
                 err instanceof Error
                     ? err.message
-                    : "Failed to load your route assignment."
+                    : "Failed to load your route assignment.",
             );
         } finally {
             setLoading(false);
@@ -68,6 +69,25 @@ export default function Delivery() {
     useEffect(() => {
         loadAssignment();
     }, [loadAssignment]);
+
+    function startDelivery() {
+        router.push({
+            pathname: "/driver/active-delivery",
+            params: {
+                bookDate: assignment?.book_date ?? today,
+                meal: selectedMeal,
+                routeNumber: String(
+                    assignment?.route?.route_number ?? "",
+                ),
+                routeUserCount: String(
+                    assignment?.route_user_count ?? 0,
+                ),
+                userCount: String(assignment?.user_count ?? 0),
+                lunchCount: String(assignment?.lunch_count ?? 0),
+                dinnerCount: String(assignment?.dinner_count ?? 0),
+            },
+        });
+    }
 
     return (
         <ScrollView
@@ -102,71 +122,22 @@ export default function Delivery() {
                     </Text>
                 </View>
             ) : (
-                <>
-                    <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
-                        <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 12 }}>
-                            Select Delivery Mode
-                        </Text>
-
-                        <View style={{ flexDirection: "row", gap: 12 }}>
-                            <Pressable
-                                onPress={() => setSelectedMeal("lunch")}
-                                style={{
-                                    flex: 1,
-                                    padding: 16,
-                                    borderRadius: 12,
-                                    borderWidth: 2,
-                                    borderColor:
-                                        selectedMeal === "lunch" ? "#D97706" : "#E2E8F0",
-                                    backgroundColor:
-                                        selectedMeal === "lunch" ? "#FFFBEB" : "#FFFFFF",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <Text style={{ fontSize: 16, fontWeight: "600" }}>
-                                    ☀️ Lunch
-                                </Text>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={() => setSelectedMeal("dinner")}
-                                style={{
-                                    flex: 1,
-                                    padding: 16,
-                                    borderRadius: 12,
-                                    borderWidth: 2,
-                                    borderColor:
-                                        selectedMeal === "dinner" ? "#7C3AED" : "#E2E8F0",
-                                    backgroundColor:
-                                        selectedMeal === "dinner" ? "#F5F3FF" : "#FFFFFF",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <Text style={{ fontSize: 16, fontWeight: "600" }}>
-                                    🌙 Dinner
-                                </Text>
-                            </Pressable>
-                        </View>
-                    </View>
-
-                    <DeliveryScreen
-                        routeNumber={assignment?.route?.route_number ?? null}
-                        routeUserCount={assignment?.route_user_count ?? 0}
-                        userCount={assignment?.user_count ?? 0}
-                        lunchCount={assignment?.lunch_count ?? 0}
-                        dinnerCount={assignment?.dinner_count ?? 0}
-                        bookDate={assignment?.book_date ?? today}
-                        selectedMeal={selectedMeal}
-                        onSelectMeal={setSelectedMeal}
-                        loading={loading}
-                        onStartDelivery={() =>
-                            router.push({
-                                pathname: "/driver/active-delivery",
-                                params: { meal: selectedMeal },
-                            })
-                        }
-                    />
-                </>
+                <DeliveryScreen
+                    routeNumber={
+                        assignment?.route?.route_number ?? null
+                    }
+                    routeUserCount={
+                        assignment?.route_user_count ?? 0
+                    }
+                    userCount={assignment?.user_count ?? 0}
+                    lunchCount={assignment?.lunch_count ?? 0}
+                    dinnerCount={assignment?.dinner_count ?? 0}
+                    bookDate={assignment?.book_date ?? today}
+                    selectedMeal={selectedMeal}
+                    onSelectMeal={setSelectedMeal}
+                    loading={loading}
+                    onStartDelivery={startDelivery}
+                />
             )}
         </ScrollView>
     );

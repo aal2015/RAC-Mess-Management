@@ -2,135 +2,189 @@
 import { useMemo, useState, useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
+    ActivityIndicator,
     View,
     Text,
     FlatList,
     Pressable,
     StyleSheet,
+    ScrollView
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getMyRouteBookings, DeliveryUserResponse } from "@/api/routes";
+import {
+    getMyRouteBookings,
+    getBookingDistances,
+    type DeliveryUserResponse,
+} from "@/api/routes";
 import { useAuth } from "@/auth/AuthContext";
+import { getCurrentBrowserLocation } from "@/utils/location";
+import ActiveDeliveryMap from "@/components/ActiveDeliveryMap";
 
-export type MealType = "lunch" | "dinner";
+type MealType = "lunch" | "dinner";
 
-type ActiveDeliveryProps = {
-    routeNumber: number | null;
-    routeUserCount: number;
-    userCount: number;
-    lunchCount: number;
-    dinnerCount: number;
-    bookDate: string;
-    selectedMeal: MealType;
-    onSelectMeal: (meal: MealType) => void;
-    loading: boolean;
-    onBack: () => void;
+type BookingWithDistance = DeliveryUserResponse & {
+    distanceMeters: number | null;
+    durationSeconds: number | null;
 };
 
-type Booking = {
-    id: string;
-    name: string;
-    landmark: string;
-    distanceKm: number;
-    delivered: boolean;
-};
+export default function ActiveDelivery() {
+    const router = useRouter();
 
-// Temporary sample data.
-// Replace this with bookings fetched from your API.
-const SAMPLE_BOOKINGS: Booking[] = [
-    {
-        id: "1",
-        name: "Rajesh Kumar",
-        landmark: "Building A",
-        distanceKm: 0.3,
-        delivered: false,
-    },
-    {
-        id: "2",
-        name: "Amit Singh",
-        landmark: "Quarter 14",
-        distanceKm: 0.7,
-        delivered: false,
-    },
-    {
-        id: "3",
-        name: "Priya Sharma",
-        landmark: "Security Block",
-        distanceKm: 1.2,
-        delivered: false,
-    },
-    {
-        id: "4",
-        name: "Rahul Verma",
-        landmark: "Quarter 22",
-        distanceKm: 1.8,
-        delivered: false,
-    },
-    {
-        id: "5",
-        name: "Sunil Kumar",
-        landmark: "Main Gate",
-        distanceKm: 2.1,
-        delivered: false,
-    },
-];
+    const params = useLocalSearchParams<{
+        bookDate?: string | string[];
+        meal?: string | string[];
+        routeNumber?: string | string[];
+        routeUserCount?: string | string[];
+        userCount?: string | string[];
+        lunchCount?: string | string[];
+        dinnerCount?: string | string[];
+    }>();
 
-export default function ActiveDelivery({
-    routeNumber,
-    routeUserCount,
-    userCount,
-    lunchCount,
-    dinnerCount,
-    bookDate,
-    selectedMeal,
-    onSelectMeal,
-    loading,
-    onBack,
-}: ActiveDeliveryProps) {
-    // const router = useRouter();
-    // const [bookings, setBookings] =
-    //     useState<Booking[]>(SAMPLE_BOOKINGS);
-    console.log(bookDate);
-    
+    // Normalize Expo Router parameters.
+    const bookDate = Array.isArray(params.bookDate)
+        ? params.bookDate[0]
+        : params.bookDate;
+
+    const rawMeal = Array.isArray(params.meal)
+        ? params.meal[0]
+        : params.meal;
+
+    const selectedMeal: MealType | null =
+        rawMeal === "lunch" || rawMeal === "dinner"
+            ? rawMeal
+            : null;
+
+    const routeNumber = Array.isArray(params.routeNumber)
+        ? params.routeNumber[0]
+        : params.routeNumber;
+
+    const routeUserCount = Array.isArray(params.routeUserCount)
+        ? params.routeUserCount[0]
+        : params.routeUserCount;
+
+    const userCount = Array.isArray(params.userCount)
+        ? params.userCount[0]
+        : params.userCount;
+
+    const lunchCount = Array.isArray(params.lunchCount)
+        ? params.lunchCount[0]
+        : params.lunchCount;
+
+    const dinnerCount = Array.isArray(params.dinnerCount)
+        ? params.dinnerCount[0]
+        : params.dinnerCount;
 
     const { accessToken } = useAuth();
 
     const [bookings, setBookings] =
         useState<DeliveryUserResponse[]>([]);
 
-    const [bookingsLoading, setBookingsLoading] = useState(false);
-    const [bookingsError, setBookingsError] = useState<string | null>(
-        null
-    );
+    const [driverLocation, setDriverLocation] = useState<{
+        latitude: number;
+        longitude: number;
+    } | null>(null);
 
+    const [distancesByBookingId, setDistancesByBookingId] =
+        useState<Record<string, {
+            distanceMeters: number;
+            durationSeconds: number;
+        }>>({});
+
+    const [selectedBookingId, setSelectedBookingId] =
+        useState<string | null>(null);
+
+    const [bookingsLoading, setBookingsLoading] = useState(false);
+    const [locationLoading, setLocationLoading] = useState(true);
+    const [distanceLoading, setDistanceLoading] = useState(false);
+
+    const [bookingsError, setBookingsError] =
+        useState<string | null>(null);
+
+    const [locationError, setLocationError] =
+        useState<string | null>(null);
+
+    const [distanceError, setDistanceError] =
+        useState<string | null>(null);
+
+    // 1. Get driver's browser location.
+    useEffect(() => {
+        let cancelled = false;
+
+        async function fetchDriverLocation() {
+            try {
+                setLocationLoading(true);
+                setLocationError(null);
+
+                const location = await getCurrentBrowserLocation();
+
+                if (!cancelled) {
+                    setDriverLocation(location);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setLocationError(
+                        error instanceof Error
+                            ? error.message
+                            : "Failed to get your location.",
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setLocationLoading(false);
+                }
+            }
+        }
+
+        fetchDriverLocation();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    // 2. Fetch bookings for the date and meal passed in navigation.
     useEffect(() => {
         let cancelled = false;
 
         async function fetchBookings() {
-            if (!accessToken) return;
+            if (!accessToken) {
+                setBookings([]);
+                setBookingsLoading(false);
+                return;
+            }
+
+            if (!bookDate || !selectedMeal) {
+                setBookings([]);
+                setBookingsError(
+                    "The booking date or meal is missing. Go back and start delivery again.",
+                );
+                setBookingsLoading(false);
+                return;
+            }
 
             setBookingsLoading(true);
             setBookingsError(null);
+            setDistanceError(null);
+            setDistancesByBookingId({});
+            setSelectedBookingId(null);
 
             try {
                 const data = await getMyRouteBookings(
                     accessToken,
                     bookDate,
-                    selectedMeal
+                    selectedMeal,
                 );
 
-                console.log(data.bookings);
-                
                 if (!cancelled) {
                     setBookings(data.bookings);
                 }
             } catch (error) {
                 if (!cancelled) {
-                    console.error("Failed to fetch bookings:", error);
+                    setBookings([]);
                     setBookingsError(
                         error instanceof Error
                             ? error.message
-                            : "Failed to fetch bookings."
+                            : "Failed to fetch bookings.",
                     );
                 }
             } finally {
@@ -147,273 +201,429 @@ export default function ActiveDelivery({
         };
     }, [accessToken, bookDate, selectedMeal]);
 
-    const isDelivered = (booking: DeliveryUserResponse) =>
-        selectedMeal === "lunch"
+    // 3. Calculate driving distances using LocationIQ Matrix.
+    useEffect(() => {
+        let cancelled = false;
+
+        async function calculateDistances() {
+            if (!driverLocation || bookings.length === 0) {
+                setDistancesByBookingId({});
+                setDistanceLoading(false);
+                return;
+            }
+
+            const validBookings = bookings.filter((booking) => {
+                const latitude = Number(booking.location?.latitude);
+                const longitude = Number(booking.location?.longitude);
+
+                return (
+                    booking.location != null &&
+                    Number.isFinite(latitude) &&
+                    Number.isFinite(longitude) &&
+                    latitude >= -90 &&
+                    latitude <= 90 &&
+                    longitude >= -180 &&
+                    longitude <= 180
+                );
+            });
+
+            if (validBookings.length === 0) {
+                setDistancesByBookingId({});
+                setDistanceError(
+                    "No valid destination coordinates are available.",
+                );
+                return;
+            }
+
+            setDistanceLoading(true);
+            setDistanceError(null);
+            setDistancesByBookingId({});
+
+            try {
+                const distances = await getBookingDistances(
+                    driverLocation,
+                    validBookings.map((booking) => ({
+                        latitude: Number(booking.location.latitude),
+                        longitude: Number(booking.location.longitude),
+                    })),
+                );
+
+                if (cancelled) return;
+
+                const result: Record<string, {
+                    distanceMeters: number;
+                    durationSeconds: number;
+                }> = {};
+
+                validBookings.forEach((booking, index) => {
+                    result[booking.id] = distances[index];
+                });
+
+                setDistancesByBookingId(result);
+            } catch (error) {
+                if (!cancelled) {
+                    setDistanceError(
+                        error instanceof Error
+                            ? error.message
+                            : "Failed to calculate driving distances.",
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setDistanceLoading(false);
+                }
+            }
+        }
+
+        calculateDistances();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [driverLocation, bookings]);
+
+    // 4. Delivery status for the selected meal.
+    function isDelivered(booking: DeliveryUserResponse) {
+        if (!selectedMeal) return false;
+
+        return selectedMeal === "lunch"
             ? booking.lunch_delivered
             : booking.dinner_delivered;
+    }
 
-    const pendingBookings = useMemo(
-        () => bookings.filter((booking) => !isDelivered(booking)),
-        [bookings, selectedMeal]
+    // 5. Sort pending deliveries nearest-first; completed deliveries last.
+    const sortedBookings = useMemo<BookingWithDistance[]>(() => {
+        return bookings
+            .map((booking) => {
+                const distance = distancesByBookingId[booking.id];
+
+                return {
+                    ...booking,
+                    distanceMeters: distance?.distanceMeters ?? null,
+                    durationSeconds: distance?.durationSeconds ?? null,
+                };
+            })
+            .sort((a, b) => {
+                const aDelivered = isDelivered(a);
+                const bDelivered = isDelivered(b);
+
+                if (aDelivered !== bDelivered) {
+                    return aDelivered ? 1 : -1;
+                }
+
+                const aDistance = a.distanceMeters ?? Infinity;
+                const bDistance = b.distanceMeters ?? Infinity;
+
+                return aDistance - bDistance;
+            });
+    }, [bookings, distancesByBookingId, selectedMeal]);
+
+    const deliveredCount = bookings.filter(isDelivered).length;
+    const pendingCount = bookings.length - deliveredCount;
+
+    const selectedBooking = sortedBookings.find(
+        (booking) => booking.id === selectedBookingId,
     );
 
-    const deliveredCount = useMemo(
-        () => bookings.filter(isDelivered).length,
-        [bookings, selectedMeal]
-    );
+    const activeBooking =
+        selectedBooking ??
+        sortedBookings.find((booking) => !isDelivered(booking)) ??
+        sortedBookings[0] ??
+        null;
 
-    const nextBooking = pendingBookings[0];
+    const nextBooking = activeBooking;
 
+    // Local-only update for now.
     function markDelivered() {
-        if (!nextBooking) return;
+        if (!activeBooking || isDelivered(activeBooking) || !selectedMeal) {
+            return;
+        }
 
-        // Local-only update for now; connect this to your
-        // backend delivery-status endpoint when available.
+        const bookingId = activeBooking.id;
+
         setBookings((current) =>
             current.map((booking) =>
-                booking.id === nextBooking.id
+                booking.id === bookingId
                     ? {
                         ...booking,
                         ...(selectedMeal === "lunch"
                             ? { lunch_delivered: true }
                             : { dinner_delivered: true }),
                     }
-                    : booking
-            )
+                    : booking,
+            ),
+        );
+    }
+
+    function formatDistance(meters: number | null) {
+        if (meters == null || !Number.isFinite(meters)) {
+            return "Distance unavailable";
+        }
+
+        return meters < 1000
+            ? `${Math.round(meters)} m`
+            : `${(meters / 1000).toFixed(1)} km`;
+    }
+
+    function formatDuration(seconds: number | null) {
+        if (seconds == null || !Number.isFinite(seconds)) {
+            return "";
+        }
+
+        const minutes = Math.round(seconds / 60);
+
+        if (minutes < 1) return "Under 1 min";
+        if (minutes < 60) return `${minutes} min`;
+
+        const hours = Math.floor(minutes / 60);
+        const remaining = minutes % 60;
+
+        return remaining
+            ? `${hours} hr ${remaining} min`
+            : `${hours} hr`;
+    }
+
+    if (!bookDate || !selectedMeal) {
+        return (
+            <View style={{ padding: 20, gap: 12 }}>
+                <Text style={{ fontSize: 20, fontWeight: "700" }}>
+                    Cannot start delivery
+                </Text>
+                <Text>
+                    The booking date or meal was not passed correctly.
+                    Please return to the Delivery screen and try again.
+                </Text>
+                <Pressable onPress={() => router.back()}>
+                    <Text style={{ color: "#2563EB" }}>
+                        ← Back to Delivery
+                    </Text>
+                </Pressable>
+            </View>
         );
     }
 
     return (
-        <View style={styles.screen}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Pressable
-                    onPress={onBack}
-                    style={styles.backButton}
-                >
-                    <Ionicons
-                        name="arrow-back"
-                        size={23}
-                        color="#0F172A"
-                    />
-                </Pressable>
+        <ScrollView
+            contentContainerStyle={{ padding: 16, gap: 12 }}
+        >
+            <Pressable onPress={() => router.back()}>
+                <Text style={{ color: "#2563EB" }}>
+                    ← Back to Delivery
+                </Text>
+            </Pressable>
 
-                <View style={styles.headerText}>
-                    <Text style={styles.title}>
-                        {selectedMeal === "lunch"
-                            ? "Lunch Delivery"
-                            : "Dinner Delivery"}
-                    </Text>
+            <Text style={{ fontSize: 24, fontWeight: "700" }}>
+                Active Delivery · Route {routeNumber || "—"}
+            </Text>
 
-                    <Text style={styles.subtitle}>
-                        {deliveredCount} of {bookings.length} delivered
-                    </Text>
-                </View>
+            <Text>
+                {bookDate} · {selectedMeal === "lunch" ? "Lunch" : "Dinner"}
+            </Text>
 
-                <View
-                    style={[
-                        styles.mealBadge,
-                        selectedMeal === "dinner" &&
-                        styles.dinnerBadge,
-                    ]}
-                >
-                    <Ionicons
-                        name={
-                            selectedMeal === "lunch"
-                                ? "sunny-outline"
-                                : "moon-outline"
-                        }
-                        size={21}
-                        color={
-                            selectedMeal === "lunch"
-                                ? "#D97706"
-                                : "#7C3AED"
-                        }
-                    />
-                </View>
+            <Text>
+                Route users: {routeUserCount ?? "—"} · Total users: {userCount ?? "—"}
+            </Text>
+
+            {/* Map placeholder for future Directions API integration. */}
+            <View
+                style={{
+                    minHeight: 260,
+                    borderRadius: 12,
+                    backgroundColor: "#E5E7EB",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <Text>Map will go here</Text>
             </View>
+            <ActiveDeliveryMap
+                driverLocation={driverLocation}
+                locations={bookings
+                    .filter((booking) => booking.location)
+                    .map((booking) => ({
+                        id: booking.id,
+                        name: booking.name,
+                        username: booking.username,
+                        latitude: booking.location.latitude,
+                        longitude: booking.location.longitude,
+                        road_name: booking.location.road_name,
+                    }))}
+                selectedLocationId={nextBooking?.id ?? null}
+            />
 
-            {/* Scrollable booking list with fixed height */}
-            {/* <View style={styles.bookingSection}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>
-                        Meal Bookings
+            {locationLoading ? (
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                    <ActivityIndicator />
+                    <Text>Getting your location…</Text>
+                </View>
+            ) : locationError ? (
+                <Text style={{ color: "#DC2626" }}>
+                    {locationError}
+                </Text>
+            ) : (
+                <Text style={{ color: "#166534" }}>
+                    Driver location acquired.
+                </Text>
+            )}
+
+            <Text>
+                Bookings: {bookings.length} · Pending: {pendingCount} ·
+                Delivered: {deliveredCount}
+            </Text>
+
+            {bookingsLoading ? (
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                    <ActivityIndicator />
+                    <Text>Loading bookings…</Text>
+                </View>
+            ) : null}
+
+            {bookingsError ? (
+                <Text style={{ color: "#DC2626" }}>
+                    {bookingsError}
+                </Text>
+            ) : null}
+
+            {distanceLoading ? (
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                    <ActivityIndicator />
+                    <Text>Calculating driving distances…</Text>
+                </View>
+            ) : null}
+
+            {distanceError ? (
+                <Text style={{ color: "#B45309" }}>
+                    Distances unavailable: {distanceError}
+                </Text>
+            ) : null}
+
+            {activeBooking ? (
+                <View
+                    style={{
+                        padding: 14,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: "#2563EB",
+                        gap: 8,
+                    }}
+                >
+                    <Text style={{ fontSize: 18, fontWeight: "700" }}>
+                        Selected destination
                     </Text>
 
-                    <Text style={styles.remainingText}>
-                        {pendingBookings.length} remaining
+                    <Text>
+                        {activeBooking.name || activeBooking.username}
                     </Text>
-                </View>
 
-                <View style={styles.bookingList}>
-                    <FlatList
-                        data={bookings}
-                        keyExtractor={(item) => item.id}
-                        showsVerticalScrollIndicator
-                        contentContainerStyle={styles.listContent}
-                        renderItem={({ item, index }) => (
-                            <View style={styles.bookingRow}>
-                                <View
-                                    style={[
-                                        styles.numberCircle,
-                                        item.delivered &&
-                                        styles.deliveredCircle,
-                                    ]}
-                                >
-                                    {item.delivered ? (
-                                        <Ionicons
-                                            name="checkmark"
-                                            size={18}
-                                            color="#FFFFFF"
-                                        />
-                                    ) : (
-                                        <Text style={styles.numberText}>
-                                            {index + 1}
-                                        </Text>
-                                    )}
-                                </View>
+                    <Text>
+                        {activeBooking.location?.road_name ||
+                            "Road name unavailable"}
+                    </Text>
 
-                                <View style={styles.bookingInfo}>
-                                    <Text
-                                        style={[
-                                            styles.bookingName,
-                                            item.delivered &&
-                                            styles.completedText,
-                                        ]}
-                                    >
-                                        {item.name}
-                                    </Text>
+                    <Text>
+                        {formatDistance(activeBooking.distanceMeters)}
+                        {activeBooking.durationSeconds != null &&
+                            Number.isFinite(activeBooking.durationSeconds)
+                            ? ` · ${formatDuration(activeBooking.durationSeconds)}`
+                            : ""}
+                    </Text>
 
-                                    <Text style={styles.landmark}>
-                                        {item.landmark}
-                                    </Text>
-
-                                    <Text style={styles.distance}>
-                                        {item.distanceKm.toFixed(1)} km away
-                                    </Text>
-                                </View>
-
-                                <View
-                                    style={[
-                                        styles.statusBadge,
-                                        item.delivered
-                                            ? styles.statusDone
-                                            : item.id === nextBooking?.id
-                                                ? styles.statusNext
-                                                : styles.statusPending,
-                                    ]}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.statusText,
-                                            item.delivered &&
-                                            styles.statusDoneText,
-                                            !item.delivered &&
-                                            item.id === nextBooking?.id &&
-                                            styles.statusNextText,
-                                        ]}
-                                    >
-                                        {item.delivered
-                                            ? "Delivered"
-                                            : item.id === nextBooking?.id
-                                                ? "Next"
-                                                : "Pending"}
-                                    </Text>
-                                </View>
-                            </View>
-                        )}
-                        ListEmptyComponent={
-                            <Text style={styles.emptyText}>
-                                No bookings found.
-                            </Text>
-                        }
-                    />
-                </View>
-            </View> */}
-
-            {/* Current delivery action */}
-            <View style={styles.actionSection}>
-                {nextBooking ? (
-                    <>
-                        <View style={styles.nextStop}>
-                            <Ionicons
-                                name="navigate-outline"
-                                size={21}
-                                color="#2563EB"
-                            />
-
-                            <View style={styles.nextStopInfo}>
-                                <Text style={styles.nextStopLabel}>
-                                    NEXT DELIVERY
-                                </Text>
-                                <Text style={styles.nextStopName}>
-                                    {nextBooking.name}
-                                </Text>
-                            </View>
-                        </View>
-
+                    {isDelivered(activeBooking) ? (
+                        <Text>Already delivered</Text>
+                    ) : (
                         <Pressable
                             onPress={markDelivered}
-                            style={({ pressed }) => [
-                                styles.deliveredButton,
-                                pressed && styles.buttonPressed,
-                            ]}
+                            style={{
+                                padding: 12,
+                                borderRadius: 8,
+                                backgroundColor: "#2563EB",
+                                alignItems: "center",
+                            }}
                         >
-                            <Ionicons
-                                name="checkmark-circle-outline"
-                                size={21}
-                                color="#FFFFFF"
-                            />
-                            <Text style={styles.deliveredButtonText}>
-                                Mark Delivered
+                            <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                                Mark Delivered (local only)
                             </Text>
                         </Pressable>
-                    </>
-                ) : (
-                    <View style={styles.completedBanner}>
-                        <Ionicons
-                            name="checkmark-circle"
-                            size={25}
-                            color="#15803D"
-                        />
-                        <Text style={styles.completedBannerText}>
-                            All deliveries completed!
+                    )}
+                </View>
+            ) : null}
+
+            <Text style={{ fontSize: 18, fontWeight: "700" }}>
+                Select a destination
+            </Text>
+
+            {sortedBookings.map((booking, index) => {
+                const delivered = isDelivered(booking);
+                const selected = activeBooking?.id === booking.id;
+
+                return (
+                    <Pressable
+                        key={booking.id}
+                        onPress={() => setSelectedBookingId(booking.id)}
+                        style={{
+                            padding: 12,
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: selected ? "#2563EB" : "#E5E7EB",
+                            backgroundColor: selected
+                                ? "#EFF6FF"
+                                : delivered
+                                    ? "#F3F4F6"
+                                    : "#FFFFFF",
+                            gap: 5,
+                        }}
+                    >
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                gap: 8,
+                            }}
+                        >
+                            <Text style={{ fontWeight: "700", flexShrink: 1 }}>
+                                {index + 1}. {booking.name || booking.username}
+                            </Text>
+
+                            <Text
+                                style={{
+                                    color: delivered ? "#6B7280" : "#166534",
+                                    fontWeight: "600",
+                                }}
+                            >
+                                {delivered ? "Delivered" : "Pending"}
+                            </Text>
+                        </View>
+
+                        <Text>
+                            {booking.location?.road_name || "Road name unavailable"}
                         </Text>
-                    </View>
-                )}
-            </View>
 
-            {/* Map placeholder: replace with your native map component */}
-            <View style={styles.mapContainer}>
-                <View style={styles.mapHeader}>
-                    <Text style={styles.mapTitle}>Delivery Map</Text>
-                    <Ionicons
-                        name="map-outline"
-                        size={21}
-                        color="#334155"
-                    />
-                </View>
+                        <Text>
+                            {formatDistance(booking.distanceMeters)}
+                            {booking.durationSeconds != null &&
+                                Number.isFinite(booking.durationSeconds)
+                                ? ` · ${formatDuration(booking.durationSeconds)}`
+                                : ""}
+                        </Text>
 
-                <View style={styles.mapPlaceholder}>
-                    <Ionicons
-                        name="location-outline"
-                        size={42}
-                        color="#2563EB"
-                    />
+                        {selected ? (
+                            <Text style={{ color: "#2563EB", fontWeight: "600" }}>
+                                Selected
+                            </Text>
+                        ) : null}
+                    </Pressable>
+                );
+            })}
 
-                    <Text style={styles.mapPlaceholderTitle}>
-                        Map will appear here
-                    </Text>
-
-                    <Text style={styles.mapPlaceholderText}>
-                        Driver location and delivery stops
-                        will be shown on the map.
-                    </Text>
-                </View>
-            </View>
-        </View>
+            {!bookingsLoading &&
+                !bookingsError &&
+                bookings.length === 0 ? (
+                <Text>No bookings found for this meal and date.</Text>
+            ) : null}
+        </ScrollView>
     );
 }
+
 
 const styles = StyleSheet.create({
     screen: {

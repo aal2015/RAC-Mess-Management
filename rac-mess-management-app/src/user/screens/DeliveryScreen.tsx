@@ -9,20 +9,8 @@ import {
 import ActiveDelivery from "@/app/(authenticated)/driver/active-delivery";
 import { Ionicons } from "@expo/vector-icons";
 
-type MealType = "lunch" | "dinner";
+export type MealType = "lunch" | "dinner";
 
-type ActiveDeliveryProps = {
-    routeNumber: number | null;
-    routeUserCount: number;
-    userCount: number;
-    lunchCount: number;
-    dinnerCount: number;
-    bookDate: string;
-    selectedMeal: MealType;
-    onSelectMeal: (meal: MealType) => void;
-    loading: boolean;
-    onBack: () => void;
-};
 type DeliveryScreenProps = {
     routeNumber: number | null;
     routeUserCount: number;
@@ -47,6 +35,7 @@ function formatDate(dateString: string) {
     });
 }
 
+
 export default function DeliveryScreen({
     routeNumber,
     routeUserCount,
@@ -62,31 +51,97 @@ export default function DeliveryScreen({
     const hasRoute = routeNumber !== null;
     const hasDeliveries = userCount > 0;
     const canStart = hasRoute && hasDeliveries && !loading;
-    const [deliveryStarted, setDeliveryStarted] = useState(false);
-
-    console.log("Parent bookDate:", bookDate);
-
-    if (deliveryStarted) {
-        return (
-            <ActiveDelivery
-                routeNumber={routeNumber}
-                routeUserCount={routeUserCount}
-                userCount={userCount}
-                lunchCount={lunchCount}
-                dinnerCount={dinnerCount}
-                bookDate={bookDate}
-                selectedMeal={selectedMeal}
-                onSelectMeal={onSelectMeal}
-                loading={loading}
-                onBack={() => setDeliveryStarted(false)}
-            />
-        );
-    }
+    console.log(bookDate);
 
     return (
         <View style={styles.container}>
+            {/* Delivery mode selector */}
+            <View
+                style={{
+                    paddingHorizontal: 20,
+                    paddingTop: 16,
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 16,
+                        fontWeight: "700",
+                        marginBottom: 12,
+                    }}
+                >
+                    Select Delivery Mode
+                </Text>
+
+                <View
+                    style={{
+                        flexDirection: "row",
+                        gap: 12,
+                    }}
+                >
+                    <Pressable
+                        onPress={() => onSelectMeal("lunch")}
+                        style={{
+                            flex: 1,
+                            padding: 16,
+                            borderRadius: 12,
+                            borderWidth: 2,
+                            borderColor:
+                                selectedMeal === "lunch"
+                                    ? "#D97706"
+                                    : "#E2E8F0",
+                            backgroundColor:
+                                selectedMeal === "lunch"
+                                    ? "#FFFBEB"
+                                    : "#FFFFFF",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Text
+                            style={{
+                                fontSize: 16,
+                                fontWeight: "600",
+                            }}
+                        >
+                            ☀️ Lunch
+                        </Text>
+                    </Pressable>
+
+                    <Pressable
+                        onPress={() => onSelectMeal("dinner")}
+                        style={{
+                            flex: 1,
+                            padding: 16,
+                            borderRadius: 12,
+                            borderWidth: 2,
+                            borderColor:
+                                selectedMeal === "dinner"
+                                    ? "#7C3AED"
+                                    : "#E2E8F0",
+                            backgroundColor:
+                                selectedMeal === "dinner"
+                                    ? "#F5F3FF"
+                                    : "#FFFFFF",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Text
+                            style={{
+                                fontSize: 16,
+                                fontWeight: "600",
+                            }}
+                        >
+                            🌙 Dinner
+                        </Text>
+                    </Pressable>
+                </View>
+            </View>
+
+            {/* Date header */}
             <View style={styles.dateHeader}>
-                <Text style={styles.dateLabel}>TODAY'S DELIVERIES</Text>
+                <Text style={styles.dateLabel}>
+                    TODAY'S DELIVERIES
+                </Text>
+
                 <Text style={styles.dateText}>
                     {formatDate(bookDate)}
                 </Text>
@@ -94,7 +149,11 @@ export default function DeliveryScreen({
 
             {loading ? (
                 <View style={styles.messageCard}>
-                    <ActivityIndicator size="large" color="#2563EB" />
+                    <ActivityIndicator
+                        size="large"
+                        color="#2563EB"
+                    />
+
                     <Text style={styles.messageText}>
                         Loading delivery details...
                     </Text>
@@ -106,9 +165,11 @@ export default function DeliveryScreen({
                         size={36}
                         color="#64748B"
                     />
+
                     <Text style={styles.messageTitle}>
                         No Route Assigned
                     </Text>
+
                     <Text style={styles.messageText}>
                         No route has been assigned to you by the admin.
                         Please contact the admin for assistance.
@@ -135,10 +196,12 @@ export default function DeliveryScreen({
                                     color="#2563EB"
                                 />
                             </View>
+
                             <View>
                                 <Text style={styles.count}>
                                     {routeUserCount}
                                 </Text>
+
                                 <Text style={styles.countLabel}>
                                     People assigned to route
                                 </Text>
@@ -159,14 +222,17 @@ export default function DeliveryScreen({
                                     color="#D97706"
                                 />
                             </View>
-                            <Text style={styles.mealTitle}>Lunch</Text>
+
+                            <Text style={styles.mealTitle}>
+                                Lunch
+                            </Text>
+
                             <Text style={styles.mealCount}>
                                 {lunchCount}
                             </Text>
+
                             <Text style={styles.mealCaption}>
-                                {lunchCount === 1
-                                    ? "person"
-                                    : "people"}
+                                {lunchCount === 1 ? "person" : "people"}
                             </Text>
                         </View>
 
@@ -183,14 +249,17 @@ export default function DeliveryScreen({
                                     color="#7C3AED"
                                 />
                             </View>
-                            <Text style={styles.mealTitle}>Dinner</Text>
+
+                            <Text style={styles.mealTitle}>
+                                Dinner
+                            </Text>
+
                             <Text style={styles.mealCount}>
                                 {dinnerCount}
                             </Text>
+
                             <Text style={styles.mealCaption}>
-                                {dinnerCount === 1
-                                    ? "person"
-                                    : "people"}
+                                {dinnerCount === 1 ? "person" : "people"}
                             </Text>
                         </View>
                     </View>
@@ -201,15 +270,20 @@ export default function DeliveryScreen({
                             size={22}
                             color="#2563EB"
                         />
+
                         <View style={styles.totalTextContainer}>
                             <Text style={styles.totalTitle}>
                                 People to deliver to
                             </Text>
+
                             <Text style={styles.totalSubtitle}>
                                 Unique people who booked lunch or dinner
                             </Text>
                         </View>
-                        <Text style={styles.totalCount}>{userCount}</Text>
+
+                        <Text style={styles.totalCount}>
+                            {userCount}
+                        </Text>
                     </View>
 
                     {!hasDeliveries && (
@@ -220,17 +294,18 @@ export default function DeliveryScreen({
                 </>
             )}
 
+            {/* Navigate to the separate active delivery page */}
             <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ disabled: !canStart }}
                 disabled={!canStart}
-                onPress={() => {
-                    setDeliveryStarted(true);
-                }}
+                onPress={onStartDelivery}
                 style={({ pressed }) => [
                     styles.startButton,
                     !canStart && styles.startButtonDisabled,
-                    pressed && canStart && styles.startButtonPressed,
+                    pressed &&
+                        canStart &&
+                        styles.startButtonPressed,
                 ]}
             >
                 <Ionicons
@@ -238,6 +313,7 @@ export default function DeliveryScreen({
                     size={22}
                     color="#FFFFFF"
                 />
+
                 <Text style={styles.startButtonText}>
                     Start Delivery
                 </Text>
@@ -245,6 +321,7 @@ export default function DeliveryScreen({
         </View>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {

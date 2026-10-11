@@ -301,3 +301,96 @@ export async function getMyRouteBookings(
 
     return response.json() as Promise<RouteMealBookingsResponse>;
 }
+
+
+export type BookingDistance = {
+    distanceMeters: number;
+    durationSeconds: number;
+};
+
+type LocationIQMatrixResponse = {
+    code?: string;
+    distances?: (number | null)[][];
+    durations?: (number | null)[][];
+};
+
+export async function getBookingDistances(
+    driverLocation: {
+        latitude: number;
+        longitude: number;
+    },
+    destinations: {
+        latitude: number;
+        longitude: number;
+    }[],
+): Promise<BookingDistance[]> {
+    if (destinations.length === 0) {
+        return [];
+    }
+
+    const apiKey = process.env.EXPO_PUBLIC_LOCATIONIQ_MAP_TOKEN;
+
+    if (!apiKey) {
+        throw new Error("LocationIQ API key is missing.");
+    }
+
+    // LocationIQ expects longitude,latitude.
+    // Index 0 is the driver; destination indices start at 1.
+    const coordinates = [
+        `${driverLocation.longitude},${driverLocation.latitude}`,
+        ...destinations.map(
+            ({ latitude, longitude }) =>
+                `${longitude},${latitude}`,
+        ),
+    ].join(";");
+
+    const params = new URLSearchParams({
+        key: apiKey,
+        sources: "0",
+        destinations: destinations
+            .map((_, index) => String(index + 1))
+            .join(";"),
+        annotations: "distance,duration",
+    });
+
+    const url =
+        `https://us1.locationiq.com/v1/matrix/driving/` +
+        `${coordinates}?${params.toString()}`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        let message = `LocationIQ Matrix request failed (${response.status}).`;
+
+        try {
+            const errorData = await response.json();
+            if (typeof errorData.error === "string") {
+                message = errorData.error;
+            }
+        } catch {
+            // Keep the default error message.
+        }
+
+        throw new Error(message);
+    }
+
+    const data =
+        (await response.json()) as LocationIQMatrixResponse;
+
+    const distances = data.distances?.[0];
+    const durations = data.durations?.[0];
+
+    if (
+        !distances ||
+        !durations ||
+        distances.length !== destinations.length ||
+        durations.length !== destinations.length
+    ) {
+        throw new Error("Invalid response from LocationIQ Matrix API.");
+    }
+
+    return destinations.map((_, index) => ({
+        distanceMeters: distances[index] ?? Infinity,
+        durationSeconds: durations[index] ?? Infinity,
+    }));
+}
