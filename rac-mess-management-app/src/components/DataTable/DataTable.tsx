@@ -30,6 +30,7 @@ export default function DataTable<T>({
     actions,
     onRowPress,
     pressableRows = false,
+    emptyMessage = "No items found.",
 }: DataTableProps<T>) {
     const [openMenuId, setOpenMenuId] =
         useState<string | null>(null);
@@ -72,103 +73,104 @@ export default function DataTable<T>({
             </View>
 
             {/* Table rows */}
-            {data.map((item) => {
-                const id = rowKey(item);
-                const isMenuOpen = openMenuId === id;
-                const itemActions = actions?.(item) ?? [];
+            {data.length === 0 ? (
+                <Text style={styles.emptyText}>
+                    {emptyMessage}
+                </Text>
+            ) : (
+                data.map((item) => {
+                    const id = rowKey(item);
+                    const isMenuOpen = openMenuId === id;
+                    const itemActions = actions?.(item) ?? [];
 
-                return (
-                    <Pressable
-                        key={id}
-                        style={[
-                            styles.tableRow,
-                            isMenuOpen && styles.openRow,
-                        ]}
-                        disabled={!pressableRows}
-                        onPress={() => {
-                            if (pressableRows) {
-                                onRowPress?.(item);
-                            }
-                        }}
-                    >
-                        {columns.map((column) => (
-                            <View
-                                key={column.key}
-                                style={[
-                                    styles.dataColumn,
-                                    column.style,
-                                ]}
-                            >
-                                {column.render ? (
-                                    renderCellValue(
-                                        column.render(item)
-                                    )
-                                ) : (
-                                    <Text style={styles.cell}>
-                                        {String(
-                                            (
-                                                item as Record<
-                                                    string,
-                                                    unknown
-                                                >
-                                            )[column.key] ?? "-"
-                                        )}
-                                    </Text>
-                                )}
-                            </View>
-                        ))}
-
-                        {actions && (
-                            <View style={styles.actionColumn}>
-                                <Pressable
-                                    accessibilityRole="button"
-                                    accessibilityLabel="Row actions"
-                                    style={styles.actionButton}
-                                    onPress={(event) => {
-                                        event.stopPropagation();
-
-                                        setOpenMenuId(
-                                            isMenuOpen ? null : id
-                                        );
-                                    }}
+                    return (
+                        <Pressable
+                            key={id}
+                            style={[
+                                styles.tableRow,
+                                isMenuOpen && styles.openRow,
+                            ]}
+                            disabled={!pressableRows}
+                            onPress={() => {
+                                if (pressableRows) {
+                                    onRowPress?.(item);
+                                }
+                            }}
+                        >
+                            {columns.map((column) => (
+                                <View
+                                    key={column.key}
+                                    style={[
+                                        styles.dataColumn,
+                                        column.style,
+                                    ]}
                                 >
-                                    <Text
-                                        style={styles.actionButtonText}
-                                    >
-                                        ⋮
-                                    </Text>
-                                </Pressable>
+                                    {column.render ? (
+                                        renderCellValue(column.render(item))
+                                    ) : (
+                                        <Text style={styles.cell}>
+                                            {String(
+                                                (
+                                                    item as Record<
+                                                        string,
+                                                        unknown
+                                                    >
+                                                )[column.key] ?? "-"
+                                            )}
+                                        </Text>
+                                    )}
+                                </View>
+                            ))}
 
-                                {isMenuOpen && (
-                                    <View style={styles.actionMenu}>
-                                        {itemActions.map((action) => (
-                                            <Pressable
-                                                key={action.label}
-                                                style={styles.menuItem}
-                                                onPress={(event) => {
-                                                    event.stopPropagation();
-                                                    setOpenMenuId(null);
-                                                    action.onPress(item);
-                                                }}
-                                            >
-                                                <Text
-                                                    style={[
-                                                        styles.menuText,
-                                                        action.destructive &&
-                                                        styles.deleteText,
-                                                    ]}
+                            {actions && (
+                                <View style={styles.actionColumn}>
+                                    <Pressable
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Row actions"
+                                        style={styles.actionButton}
+                                        onPress={(event) => {
+                                            event.stopPropagation();
+                                            setOpenMenuId(
+                                                isMenuOpen ? null : id
+                                            );
+                                        }}
+                                    >
+                                        <Text style={styles.actionButtonText}>
+                                            ⋮
+                                        </Text>
+                                    </Pressable>
+
+                                    {isMenuOpen && (
+                                        <View style={styles.actionMenu}>
+                                            {itemActions.map((action) => (
+                                                <Pressable
+                                                    key={action.label}
+                                                    style={styles.menuItem}
+                                                    onPress={(event) => {
+                                                        event.stopPropagation();
+                                                        setOpenMenuId(null);
+                                                        action.onPress(item);
+                                                    }}
                                                 >
-                                                    {action.label}
-                                                </Text>
-                                            </Pressable>
-                                        ))}
-                                    </View>
-                                )}
-                            </View>
-                        )}
-                    </Pressable>
-                );
-            })}
+                                                    <Text
+                                                        style={[
+                                                            styles.menuText,
+                                                            action.destructive &&
+                                                            styles.deleteText,
+                                                        ]}
+                                                    >
+                                                        {action.label}
+                                                    </Text>
+                                                </Pressable>
+                                            ))}
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </Pressable>
+                    );
+                })
+            )}
         </View>
     );
 }

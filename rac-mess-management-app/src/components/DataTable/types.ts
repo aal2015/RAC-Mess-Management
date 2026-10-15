@@ -20,10 +20,11 @@ export type DataTableAction<T> = {
 };
 
 export type DataTableProps<T> = {
-  data: T[];
-  rowKey: (item: T) => string;
-  columns: DataTableColumn<T>[];
-  actions?: (item: T) => DataTableAction<T>[];
-  onRowPress?: (item: T) => void;
-  pressableRows?: boolean;
+    data: T[];
+    rowKey: (item: T) => string;
+    columns: DataTableColumn<T>[];
+    actions?: (item: T) => DataTableAction<T>[];
+    onRowPress?: (item: T) => void;
+    pressableRows?: boolean;
+    emptyMessage?: string;
 };

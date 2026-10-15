@@ -110,4 +110,12 @@ export const styles = StyleSheet.create({
     minWidth: 0,
     justifyContent: "center",
   },
+
+  emptyText: {
+    textAlign: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    color: "#666",
+    fontSize: 14,
+  },
 });
