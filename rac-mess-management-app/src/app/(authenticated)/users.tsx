@@ -14,24 +14,72 @@ import {
   UnauthorizedError,
   type User,
 } from "../../api/admin";
+import DataTable from "@/components/DataTable/DataTable";
+import type {
+  DataTableColumn,
+  DataTableAction,
+} from "@/components/DataTable/types";
 import LogoutButton from "../../components/LogoutButton";
 
 import { styles } from "../../user/styles/users.styles";
 
+
 export default function UsersScreen() {
   const router = useRouter();
-
   const { accessToken, logout } = useAuth();
 
   const [people, setPeople] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   const itemsPerPage = 10;
+
+  const columns: DataTableColumn<User>[] = [
+    {
+      key: "name",
+      title: "Name",
+      style: styles.nameColumn,
+    },
+    {
+      key: "phone",
+      title: "Phone",
+      style: styles.phoneColumn,
+      render: (person) => person.phone ?? "-",
+    },
+    {
+      key: "role",
+      title: "Role",
+      style: styles.roleColumn,
+    },
+  ];
+
+  const getActions = (
+    person: User
+  ): DataTableAction<User>[] => [
+    {
+      label: "View Details",
+      onPress: (person) => {
+        router.push({
+          pathname: "./user-detail/[id]",
+          params: { id: person.id },
+        });
+      },
+    },
+    {
+      label: "Meal Management",
+      onPress: (person) => {
+        router.push({
+          pathname: "/calendar",
+          params: {
+            userId: person.id,
+            username: person.username,
+          },
+        });
+      },
+    },
+  ];
 
   const loadUsers = useCallback(async () => {
     if (!accessToken) {
@@ -43,7 +91,6 @@ export default function UsersScreen() {
       setError("");
 
       const data = await getBattalionUsers(accessToken);
-
       setPeople(data);
     } catch (error) {
       if (error instanceof UnauthorizedError) {
@@ -88,7 +135,6 @@ export default function UsersScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>User Management</Text>
-
         <LogoutButton />
       </View>
 
@@ -115,137 +161,15 @@ export default function UsersScreen() {
         {isLoading ? (
           <ActivityIndicator size="large" />
         ) : error ? (
-          <Text style={styles.errorText}>
-            {error}
-          </Text>
+          <Text style={styles.errorText}>{error}</Text>
         ) : (
           <>
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <Text
-                  style={[
-                    styles.headerCell,
-                    styles.nameColumn,
-                  ]}
-                >
-                  Name
-                </Text>
-
-                <Text
-                  style={[
-                    styles.headerCell,
-                    styles.phoneColumn,
-                  ]}
-                >
-                  Phone
-                </Text>
-
-                <Text
-                  style={[
-                    styles.headerCell,
-                    styles.roleColumn,
-                  ]}
-                >
-                  Role
-                </Text>
-
-                <Text style={[styles.headerCell, styles.actionColumn]}>
-                  Actions
-                </Text>
-              </View>
-
-              {paginatedPeople.map((person) => (
-                <View
-                  key={person.id}
-                  style={[
-                    styles.tableRow,
-                    openMenuId === person.id && styles.openRow,
-                  ]}
-                >
-                  <Text style={[styles.cell, styles.nameColumn]}>
-                    {person.name}
-                  </Text>
-
-                  <Text style={[styles.cell, styles.phoneColumn]}>
-                    {person.phone ?? "-"}
-                  </Text>
-
-                  <Text style={[styles.cell, styles.roleColumn]}>
-                    {person.role}
-                  </Text>
-
-                  <View style={styles.actionColumn}>
-                    <Pressable
-                      style={styles.actionButton}
-                      onPress={() =>
-                        setOpenMenuId(
-                          openMenuId === person.id ? null : person.id
-                        )
-                      }
-                    >
-                      <Text style={styles.actionButtonText}>⋮</Text>
-                    </Pressable>
-
-                    {openMenuId === person.id && (
-                      <View style={styles.actionMenu}>
-                        <Pressable
-                          style={styles.menuItem}
-                          onPress={() => {
-                            setOpenMenuId(null);
-
-                            router.push({
-                              pathname: "./user-detail/[id]",
-                              params: {
-                                id: person.id,
-                              },
-                            });
-                          }}
-                        >
-                          <Text style={styles.menuText}>
-                            View Details
-                          </Text>
-                        </Pressable>
-
-                        <Pressable
-                          style={styles.menuItem}
-                          onPress={() => {
-                            setOpenMenuId(null);
-
-                            router.push({
-                              pathname: "/calendar",
-                              params: {
-                                userId: person.id,
-                                username: person.username,
-                              },
-                            });
-                          }}
-                        >
-                          <Text style={styles.menuText}>
-                            Meal Management
-                          </Text>
-                        </Pressable>
-
-                        {/* <Pressable
-                          style={styles.menuItem}
-                          onPress={() => {
-                            setOpenMenuId(null);
-
-                            console.log(
-                              "Delete user:",
-                              person.id
-                            );
-                          }}
-                        >
-                          <Text style={styles.deleteText}>
-                            Delete User
-                          </Text>
-                        </Pressable> */}
-                      </View>
-                    )}
-                  </View>
-                </View>
-              ))}
-            </View>
+            <DataTable
+              data={paginatedPeople}
+              rowKey={(person) => person.id}
+              columns={columns}
+              actions={getActions}
+            />
 
             {filteredPeople.length === 0 && (
               <Text style={styles.emptyText}>
@@ -259,7 +183,7 @@ export default function UsersScreen() {
                   style={[
                     styles.pageButton,
                     currentPage === 1 &&
-                    styles.disabledButton,
+                      styles.disabledButton,
                   ]}
                   disabled={currentPage === 1}
                   onPress={() =>
@@ -279,7 +203,7 @@ export default function UsersScreen() {
                   style={[
                     styles.pageButton,
                     currentPage === totalPages &&
-                    styles.disabledButton,
+                      styles.disabledButton,
                   ]}
                   disabled={currentPage === totalPages}
                   onPress={() =>
