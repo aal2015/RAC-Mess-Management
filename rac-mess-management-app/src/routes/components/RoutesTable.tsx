@@ -6,6 +6,11 @@ import {
     ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import DataTable from "@/components/DataTable/DataTable";
+import type {
+    DataTableColumn,
+    DataTableAction,
+} from "@/components/DataTable/types";
 
 import { Route } from "@/api/routes";
 import { styles } from "../../user/styles/routes.styles";
@@ -33,6 +38,66 @@ export default function RoutesTable({
 }: RoutesTableProps) {
     const [activeMenuRouteId, setActiveMenuRouteId] =
         useState<string | null>(null);
+
+    const columns: DataTableColumn<Route>[] = [
+        {
+            key: "route_number",
+            title: "Route",
+            style: styles.routeNumberColumn,
+            headerStyle: styles.tableHeaderText,
+            render: (route) => (
+                <Text style={styles.tableTextBold}>
+                    Route {route.route_number}
+                </Text>
+            ),
+        },
+        {
+            key: "name",
+            title: "Name",
+            style: styles.routeNameColumn,
+            headerStyle: styles.tableHeaderText,
+            render: (route) => (
+                <Text
+                    style={styles.tableText}
+                    numberOfLines={1}
+                >
+                    {route.name}
+                </Text>
+            ),
+        },
+        {
+            key: "driver",
+            title: "Driver",
+            style: styles.driverColumn,
+            headerStyle: styles.tableHeaderText,
+            render: (route) => (
+                <Text
+                    style={styles.tableText}
+                    numberOfLines={1}
+                >
+                    {route.driver?.name ?? "No driver"}
+                </Text>
+            ),
+        },
+    ];
+
+    const getActions = (
+        route: Route
+    ): DataTableAction<Route>[] => [
+            {
+                label: "Assign Driver",
+                onPress: onAssignDriver,
+            },
+            {
+                label: "Edit Route Details",
+                onPress: onEditRoute,
+            },
+            {
+                label: "Delete Route",
+                onPress: onDeleteRoute,
+                destructive: true,
+            },
+        ];
 
     return (
         <View style={styles.card}>
@@ -75,156 +140,19 @@ export default function RoutesTable({
                 <Text style={styles.errorText}>
                     {error}
                 </Text>
+            ) : routes.length === 0 ? (
+                <Text style={styles.emptyText}>
+                    No routes found.
+                </Text>
             ) : (
-                <View style={styles.table}>
-                    <View style={styles.tableHeader}>
-                        <Text
-                            style={[
-                                styles.tableHeaderText,
-                                styles.routeNumberColumn,
-                            ]}
-                        >
-                            Route
-                        </Text>
-
-                        <Text
-                            style={[
-                                styles.tableHeaderText,
-                                styles.routeNameColumn,
-                            ]}
-                        >
-                            Name
-                        </Text>
-
-                        <Text
-                            style={[
-                                styles.tableHeaderText,
-                                styles.driverColumn,
-                            ]}
-                        >
-                            Driver
-                        </Text>
-
-                        <Text
-                            style={[
-                                styles.tableHeaderText,
-                                styles.actionColumn,
-                            ]}
-                        >
-                            Action
-                        </Text>
-                    </View>
-
-                    {routes.length === 0 ? (
-                        <Text style={styles.emptyText}>
-                            No routes found.
-                        </Text>
-                    ) : (
-                        routes.map((route) => (
-                            <Pressable
-                                key={route.id}
-                                style={[
-                                    styles.tableRow,
-                                    activeMenuRouteId === route.id && styles.activeMenuRow,
-                                ]}
-                                onPress={() => {
-                                    if (activeMenuRouteId) {
-                                        setActiveMenuRouteId(null);
-                                        return;
-                                    }
-
-                                    onSelectRoute(route);
-                                }}
-                            >
-                                <Text
-                                    style={[
-                                        styles.tableTextBold,
-                                        styles.routeNumberColumn,
-                                    ]}
-                                >
-                                    Route {route.route_number}
-                                </Text>
-
-                                <Text
-                                    style={[
-                                        styles.tableText,
-                                        styles.routeNameColumn,
-                                    ]}
-                                    numberOfLines={1}
-                                >
-                                    {route.name}
-                                </Text>
-
-                                <Text
-                                    style={[
-                                        styles.tableText,
-                                        styles.driverColumn,
-                                    ]}
-                                    numberOfLines={1}
-                                >
-                                    {route.driver?.name ?? "No driver"}
-                                </Text>
-
-                                <View style={styles.actionContainer}>
-                                    <Pressable
-                                        style={styles.actionButton}
-                                        onPress={(event) => {
-                                            event.stopPropagation();
-
-                                            setActiveMenuRouteId(
-                                                activeMenuRouteId === route.id
-                                                    ? null
-                                                    : route.id
-                                            );
-                                        }}
-                                    >
-                                        <Text style={styles.actionButtonText}>⋮</Text>
-                                    </Pressable>
-
-                                    {activeMenuRouteId === route.id && (
-                                        <View style={styles.actionMenu}>
-                                            <Pressable
-                                                style={styles.actionMenuItem}
-                                                onPress={() => {
-                                                    setActiveMenuRouteId(null);
-                                                    onAssignDriver(route);
-                                                }}
-                                            >
-                                                <Text style={styles.actionMenuText}>
-                                                    Assign Driver
-                                                </Text>
-                                            </Pressable>
-
-                                            <Pressable
-                                                style={styles.actionMenuItem}
-                                                onPress={() => {
-                                                    setActiveMenuRouteId(null);
-                                                    onEditRoute(route);
-                                                }}
-                                            >
-                                                <Text style={styles.actionMenuText}>
-                                                    Edit Route Details
-                                                </Text>
-                                            </Pressable>
-
-                                            <Pressable
-                                                style={styles.actionMenuItem}
-                                                onPress={() => {
-                                                    setActiveMenuRouteId(null);
-                                                    onDeleteRoute(route);
-                                                }}
-                                            >
-                                                <Text style={styles.deleteActionText}>
-                                                    Delete Route
-                                                </Text>
-                                            </Pressable>
-                                        </View>
-                                    )}
-                                </View>
-                            </Pressable>
-                        ))
-                    )}
-                </View>
+                <DataTable
+                    data={routes}
+                    rowKey={(route) => route.id}
+                    columns={columns}
+                    actions={getActions}
+                    pressableRows
+                    onRowPress={onSelectRoute}
+                />
             )}
         </View>
     );

@@ -1,10 +1,15 @@
 import type { ReactNode } from "react";
-import type { StyleProp, ViewStyle } from "react-native";
+import type {
+  StyleProp,
+  ViewStyle,
+  TextStyle,
+} from "react-native";
 
 export type DataTableColumn<T> = {
   key: string;
   title: string;
   style?: StyleProp<ViewStyle>;
+  headerStyle?: StyleProp<TextStyle>;
   render?: (item: T) => ReactNode;
 };
 
@@ -19,4 +24,6 @@ export type DataTableProps<T> = {
   rowKey: (item: T) => string;
   columns: DataTableColumn<T>[];
   actions?: (item: T) => DataTableAction<T>[];
+  onRowPress?: (item: T) => void;
+  pressableRows?: boolean;
 };

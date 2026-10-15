@@ -1,4 +1,3 @@
-
 import React, { isValidElement, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -29,8 +28,11 @@ export default function DataTable<T>({
     rowKey,
     columns,
     actions,
+    onRowPress,
+    pressableRows = false,
 }: DataTableProps<T>) {
-    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [openMenuId, setOpenMenuId] =
+        useState<string | null>(null);
 
     return (
         <View style={styles.table}>
@@ -39,17 +41,32 @@ export default function DataTable<T>({
                 {columns.map((column) => (
                     <View
                         key={column.key}
-                        style={[styles.dataColumn, column.style]}
+                        style={[
+                            styles.dataColumn,
+                            column.style,
+                        ]}
                     >
-                        <Text style={styles.headerCell}>
+                        <Text
+                            style={[
+                                styles.headerCell,
+                                column.headerStyle,
+                            ]}
+                        >
                             {column.title}
                         </Text>
                     </View>
                 ))}
 
                 {actions && (
-                    <View style={[styles.dataColumn, styles.actionColumn]}>
-                        <Text style={styles.headerCell}>Actions</Text>
+                    <View
+                        style={[
+                            styles.dataColumn,
+                            styles.actionColumn,
+                        ]}
+                    >
+                        <Text style={styles.headerCell}>
+                            Actions
+                        </Text>
                     </View>
                 )}
             </View>
@@ -61,24 +78,40 @@ export default function DataTable<T>({
                 const itemActions = actions?.(item) ?? [];
 
                 return (
-                    <View
+                    <Pressable
                         key={id}
                         style={[
                             styles.tableRow,
                             isMenuOpen && styles.openRow,
                         ]}
+                        disabled={!pressableRows}
+                        onPress={() => {
+                            if (pressableRows) {
+                                onRowPress?.(item);
+                            }
+                        }}
                     >
                         {columns.map((column) => (
                             <View
                                 key={column.key}
-                                style={[styles.dataColumn, column.style]}
+                                style={[
+                                    styles.dataColumn,
+                                    column.style,
+                                ]}
                             >
                                 {column.render ? (
-                                    renderCellValue(column.render(item))
+                                    renderCellValue(
+                                        column.render(item)
+                                    )
                                 ) : (
                                     <Text style={styles.cell}>
                                         {String(
-                                            (item as Record<string, unknown>)[column.key] ?? "-"
+                                            (
+                                                item as Record<
+                                                    string,
+                                                    unknown
+                                                >
+                                            )[column.key] ?? "-"
                                         )}
                                     </Text>
                                 )}
@@ -91,11 +124,19 @@ export default function DataTable<T>({
                                     accessibilityRole="button"
                                     accessibilityLabel="Row actions"
                                     style={styles.actionButton}
-                                    onPress={() =>
-                                        setOpenMenuId(isMenuOpen ? null : id)
-                                    }
+                                    onPress={(event) => {
+                                        event.stopPropagation();
+
+                                        setOpenMenuId(
+                                            isMenuOpen ? null : id
+                                        );
+                                    }}
                                 >
-                                    <Text style={styles.actionButtonText}>⋮</Text>
+                                    <Text
+                                        style={styles.actionButtonText}
+                                    >
+                                        ⋮
+                                    </Text>
                                 </Pressable>
 
                                 {isMenuOpen && (
@@ -104,7 +145,8 @@ export default function DataTable<T>({
                                             <Pressable
                                                 key={action.label}
                                                 style={styles.menuItem}
-                                                onPress={() => {
+                                                onPress={(event) => {
+                                                    event.stopPropagation();
                                                     setOpenMenuId(null);
                                                     action.onPress(item);
                                                 }}
@@ -124,7 +166,7 @@ export default function DataTable<T>({
                                 )}
                             </View>
                         )}
-                    </View>
+                    </Pressable>
                 );
             })}
         </View>
