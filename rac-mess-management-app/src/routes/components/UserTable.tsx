@@ -12,14 +12,17 @@ import { Route } from "@/api/routes";
 import { UserWithLocation } from "@/api/users";
 import { styles } from "../../user/styles/routes.styles";
 
+import DataTable from "@/components/DataTable/DataTable";
+import type {
+    DataTableColumn,
+} from "@/components/DataTable/types";
+
 type UsersTableProps = {
     users: UserWithLocation[];
     routes: Route[];
     loading: boolean;
     error: string | null;
-    onAssignUser: (
-        user: UserWithLocation
-    ) => void;
+    onAssignUser: (user: UserWithLocation) => void;
     onUnassignUser: (user: UserWithLocation) => void;
 };
 
@@ -29,7 +32,7 @@ export default function UsersTable({
     loading,
     error,
     onAssignUser,
-    onUnassignUser
+    onUnassignUser,
 }: UsersTableProps) {
     const [userFilter, setUserFilter] = useState<
         "assigned" | "unassigned"
@@ -59,14 +62,68 @@ export default function UsersTable({
         return matchesFilter && matchesSearch;
     });
 
+    const columns: DataTableColumn<UserWithLocation>[] = [
+        {
+            key: "name",
+            title: "Name",
+            style: styles.nameColumn,
+            render: (user) => (
+                <Text style={styles.tableTextBold}>
+                    {user.name}
+                </Text>
+            ),
+        },
+        {
+            key: "location",
+            title: "Location",
+            style: styles.locationColumn,
+            render: (user) => (
+                <Text style={styles.tableText}>
+                    {user.location?.road_name ?? "No location"}
+                </Text>
+            ),
+        },
+        {
+            key: "route",
+            title: "Route",
+            style: styles.routeColumn,
+            render: (user) =>
+                user.route !== null ? (
+                    <View style={styles.routeAssignedContainer}>
+                        <View style={styles.routeBadge}>
+                            <Text style={styles.routeBadgeText}>
+                                Route {user.route.route_number}
+                            </Text>
+                        </View>
+
+                        <Pressable
+                            style={styles.unassignButton}
+                            onPress={() => onUnassignUser(user)}
+                        >
+                            <Text style={styles.unassignButtonText}>
+                                Unassign
+                            </Text>
+                        </Pressable>
+                    </View>
+                ) : (
+                    <Pressable
+                        style={styles.assignButton}
+                        onPress={() => onAssignUser(user)}
+                    >
+                        <Text style={styles.assignButtonText}>
+                            Assign
+                        </Text>
+                    </Pressable>
+                ),
+        },
+    ];
+
     return (
         <View style={styles.card}>
+            {/* Section header */}
             <View style={styles.sectionHeader}>
                 <View style={styles.sectionHeaderText}>
-                    <Text style={styles.label}>
-                        Users
-                    </Text>
-
+                    <Text style={styles.label}>Users</Text>
                     <Text style={styles.sectionSubtitle}>
                         Assign users to routes
                     </Text>
@@ -77,22 +134,21 @@ export default function UsersTable({
                 </Text>
             </View>
 
+            {/* Assigned / Unassigned filters */}
             <View style={styles.toggleRow}>
                 <Pressable
                     style={[
-                        styles.option,
+                        styles.toggleButton,
                         userFilter === "assigned" &&
-                        styles.takingActive,
+                        styles.toggleButtonActive,
                     ]}
-                    onPress={() =>
-                        setUserFilter("assigned")
-                    }
+                    onPress={() => setUserFilter("assigned")}
                 >
                     <Text
                         style={[
-                            styles.optionText,
+                            styles.toggleButtonText,
                             userFilter === "assigned" &&
-                            styles.whiteText,
+                            styles.toggleButtonTextActive,
                         ]}
                     >
                         Assigned
@@ -101,19 +157,17 @@ export default function UsersTable({
 
                 <Pressable
                     style={[
-                        styles.option,
+                        styles.toggleButton,
                         userFilter === "unassigned" &&
-                        styles.takingActive,
+                        styles.toggleButtonActive,
                     ]}
-                    onPress={() =>
-                        setUserFilter("unassigned")
-                    }
+                    onPress={() => setUserFilter("unassigned")}
                 >
                     <Text
                         style={[
-                            styles.optionText,
+                            styles.toggleButtonText,
                             userFilter === "unassigned" &&
-                            styles.whiteText,
+                            styles.toggleButtonTextActive,
                         ]}
                     >
                         Unassigned
@@ -121,6 +175,7 @@ export default function UsersTable({
                 </Pressable>
             </View>
 
+            {/* Search */}
             <View style={styles.searchContainer}>
                 <Ionicons
                     name="search-outline"
@@ -132,111 +187,28 @@ export default function UsersTable({
                     value={search}
                     onChangeText={setSearch}
                     placeholder="Search users..."
-                    placeholderTextColor="#9CA3AF"
                     style={styles.searchInput}
+                    placeholderTextColor="#9CA3AF"
                 />
             </View>
 
+            {/* Table content */}
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator />
                 </View>
             ) : error ? (
-                <Text style={styles.errorText}>
-                    {error}
+                <Text style={styles.errorText}>{error}</Text>
+            ) : filteredUsers.length === 0 ? (
+                <Text style={styles.emptyText}>
+                    No users found.
                 </Text>
             ) : (
-                <View style={styles.table}>
-                    <View style={styles.tableHeader}>
-                        <Text
-                            style={[
-                                styles.tableHeaderText,
-                                styles.nameColumn,
-                            ]}
-                        >
-                            Name
-                        </Text>
-
-                        <Text
-                            style={[
-                                styles.tableHeaderText,
-                                styles.locationColumn,
-                            ]}
-                        >
-                            Location
-                        </Text>
-
-                        <Text
-                            style={[
-                                styles.tableHeaderText,
-                                styles.routeColumn,
-                            ]}
-                        >
-                            Route
-                        </Text>
-                    </View>
-
-                    {filteredUsers.length === 0 ? (
-                        <Text style={styles.emptyText}>
-                            No users found.
-                        </Text>
-                    ) : (
-                        filteredUsers.map((user) => (
-                            <View
-                                key={user.id}
-                                style={styles.tableRow}
-                            >
-                                <Text
-                                    style={[
-                                        styles.tableTextBold,
-                                        styles.nameColumn,
-                                    ]}
-                                >
-                                    {user.name}
-                                </Text>
-
-                                <Text
-                                    style={[
-                                        styles.tableText,
-                                        styles.locationColumn,
-                                    ]}
-                                >
-                                    {user.location?.road_name ?? "No location"}
-                                </Text>
-
-                                <View style={styles.routeColumn}>
-                                    {user.route !== null ? (
-                                        <View style={styles.routeAssignedContainer}>
-                                            <View style={styles.routeBadge}>
-                                                <Text style={styles.routeBadgeText}>
-                                                    Route {user.route.route_number}
-                                                </Text>
-                                            </View>
-
-                                            <Pressable
-                                                style={styles.unassignButton}
-                                                onPress={() => onUnassignUser(user)}
-                                            >
-                                                <Text style={styles.unassignButtonText}>
-                                                    Unassign
-                                                </Text>
-                                            </Pressable>
-                                        </View>
-                                    ) : (
-                                        <Pressable
-                                            style={styles.assignButton}
-                                            onPress={() => onAssignUser(user)}
-                                        >
-                                            <Text style={styles.assignButtonText}>
-                                                Assign
-                                            </Text>
-                                        </Pressable>
-                                    )}
-                                </View>
-                            </View>
-                        ))
-                    )}
-                </View>
+                <DataTable
+                    data={filteredUsers}
+                    rowKey={(user) => user.id}
+                    columns={columns}
+                />
             )}
         </View>
     );

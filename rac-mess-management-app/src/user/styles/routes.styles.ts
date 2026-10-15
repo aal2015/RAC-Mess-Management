@@ -692,4 +692,31 @@ export const styles = StyleSheet.create({
         overflow: "hidden",
         borderRadius: 8,
     },
+
+    toggleButton: {
+        flex: 1,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#FFFFFF",
+    },
+
+    toggleButtonActive: {
+        backgroundColor: "#2563EB",
+        borderWidth: 1,
+        borderColor: "#2563EB",
+    },
+
+    toggleButtonText: {
+        fontSize: 14,
+        fontWeight: "500",
+        color: "#000000",
+    },
+
+    toggleButtonTextActive: {
+        color: "#FFFFFF",
+        fontWeight: "600",
+    },
 });

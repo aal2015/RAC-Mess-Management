@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import type { StyleProp, TextStyle } from "react-native";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export type DataTableColumn<T> = {
   key: string;
   title: string;
-  style?: StyleProp<TextStyle>;
+  style?: StyleProp<ViewStyle>;
   render?: (item: T) => ReactNode;
 };
 

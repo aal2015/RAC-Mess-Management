@@ -105,4 +105,9 @@ export const styles = StyleSheet.create({
     zIndex: 1000,
     elevation: 10,
   },
+
+  dataColumn: {
+    minWidth: 0,
+    justifyContent: "center",
+  },
 });
