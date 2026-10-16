@@ -30,6 +30,9 @@ import {
 import { styles } from "../../../user/styles/user-detail.styles";
 
 import LocationMap from "@/components/LocationMap";
+import RouteMap, {
+  type RouteMapLocation,
+} from "@/components/RouteMap";
 
 export default function UserDetailScreen() {
   const router = useRouter();
@@ -291,9 +294,17 @@ export default function UserDetailScreen() {
                     Map coming soon
                   </Text>
                 </View> */}
-                <LocationMap
-                  latitude={location?.latitude}
-                  longitude={location?.longitude}
+                <RouteMap
+                  locations={[
+                    {
+                      id: user.id,
+                      name: user.name,
+                      username: user.username,
+                      latitude: Number(location.latitude),
+                      longitude: Number(location.longitude),
+                      road_name: location.road_name,
+                    },
+                  ]}
                 />
 
                 {isAdmin && (
@@ -367,9 +378,17 @@ export default function UserDetailScreen() {
                               {searchResult.longitude}
                             </Text>
 
-                            <LocationMap
-                              latitude={searchResult.latitude}
-                              longitude={searchResult.longitude}
+                            <RouteMap
+                              locations={[
+                                {
+                                  id: user.id,
+                                  name: user.name,
+                                  username: user.username,
+                                  latitude: Number(searchResult.latitude),
+                                  longitude: Number(searchResult.longitude),
+                                  road_name: searchResult.display_name,
+                                },
+                              ]}
                             />
                           </View>
                         )}
@@ -440,9 +459,17 @@ export default function UserDetailScreen() {
                           {searchResult.latitude},{" "}
                           {searchResult.longitude}
                         </Text>
-                        <LocationMap
-                          latitude={searchResult.latitude}
-                          longitude={searchResult.longitude}
+                        <RouteMap
+                          locations={[
+                            {
+                              id: user.id,
+                              name: user.name,
+                              username: user.username,
+                              latitude: Number(location.latitude),
+                              longitude: Number(location.longitude),
+                              road_name: location.road_name,
+                            },
+                          ]}
                         />
                       </View>
                     )}
