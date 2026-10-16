@@ -17,6 +17,9 @@ import {
 } from "../../api/admin";
 import LogoutButton from "../../components/LogoutButton";
 
+import DataTable from "@/components/DataTable/DataTable";
+import type { DataTableColumn } from "@/components/DataTable/types";
+
 import { styles } from "../../user/styles/directory.styles";
 
 export default function DirectoryScreen() {
@@ -84,6 +87,54 @@ export default function DirectoryScreen() {
     startIndex + itemsPerPage
   );
 
+  const columns: DataTableColumn<User>[] = [
+    {
+      key: "name",
+      title: "Name",
+      style: styles.nameColumn,
+      headerStyle: styles.headerCell,
+      render: (person) => (
+        <Text style={styles.cell}>{person.name}</Text>
+      ),
+    },
+    {
+      key: "phone",
+      title: "Phone",
+      style: styles.phoneColumn,
+      headerStyle: styles.headerCell,
+      render: (person) => (
+        <Text style={styles.cell}>{person.phone ?? "-"}</Text>
+      ),
+    },
+    {
+      key: "role",
+      title: "Role",
+      style: styles.roleColumn,
+      headerStyle: styles.headerCell,
+      render: (person) => (
+        <Text style={styles.cell}>{person.role}</Text>
+      ),
+    },
+    {
+      key: "view",
+      title: "View",
+      style: styles.actionColumn,
+      headerStyle: styles.headerCell,
+      render: (person) => (
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/(authenticated)/user-detail/[id]",
+              params: { id: person.id },
+            })
+          }
+        >
+          <Text style={styles.viewText}>View</Text>
+        </Pressable>
+      ),
+    },
+  ];
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -113,103 +164,12 @@ export default function DirectoryScreen() {
           </Text>
         ) : (
           <>
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <Text
-                  style={[
-                    styles.headerCell,
-                    styles.nameColumn,
-                  ]}
-                >
-                  Name
-                </Text>
-
-                <Text
-                  style={[
-                    styles.headerCell,
-                    styles.phoneColumn,
-                  ]}
-                >
-                  Phone
-                </Text>
-
-                <Text
-                  style={[
-                    styles.headerCell,
-                    styles.roleColumn,
-                  ]}
-                >
-                  Role
-                </Text>
-
-                <Text
-                  style={[
-                    styles.headerCell,
-                    styles.actionColumn,
-                  ]}
-                >
-                  View
-                </Text>
-              </View>
-
-              {paginatedPeople.map((person) => (
-                <View
-                  key={person.id}
-                  style={styles.tableRow}
-                >
-                  <Text
-                    style={[
-                      styles.cell,
-                      styles.nameColumn,
-                    ]}
-                  >
-                    {person.name}
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.cell,
-                      styles.phoneColumn,
-                    ]}
-                  >
-                    {person.phone ?? "-"}
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.cell,
-                      styles.roleColumn,
-                    ]}
-                  >
-                    {person.role}
-                  </Text>
-
-                  <View style={styles.actionColumn}>
-                    <Pressable
-                      onPress={() =>
-                        router.push({
-                          pathname:
-                            "/(authenticated)/user-detail/[id]",
-                          params: {
-                            id: person.id,
-                          },
-                        })
-                      }
-                    >
-                      <Text style={styles.viewText}>
-                        View
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ))}
-            </View>
-
-            {filteredPeople.length === 0 && (
-              <Text style={styles.emptyText}>
-                No people found.
-              </Text>
-            )}
+            <DataTable
+              data={paginatedPeople}
+              rowKey={(person) => person.id}
+              columns={columns}
+              emptyMessage="No people found."
+            />
 
             {totalPages > 1 && (
               <View style={styles.pagination}>
@@ -239,9 +199,7 @@ export default function DirectoryScreen() {
                     currentPage === totalPages &&
                     styles.disabledButton,
                   ]}
-                  disabled={
-                    currentPage === totalPages
-                  }
+                  disabled={currentPage === totalPages}
                   onPress={() =>
                     setCurrentPage((page) => page + 1)
                   }
