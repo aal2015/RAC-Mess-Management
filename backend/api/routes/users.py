@@ -18,8 +18,8 @@ from schemas.meal_booking import (
     MealBookingResponse,
     UpdateMealBookingRequest
 )
-from models.location import Location
-from schemas.location import LocationResponse
+from models.location import Location, MessLocation
+from schemas.location import LocationResponse, MessLocationResponse
 from models.route import Route
 from models.route_location import RouteLocation
 
@@ -354,3 +354,28 @@ def get_battalion_users_with_locations(
         )
 
     return result
+
+@router.get(
+    "/mess-locations",
+    response_model=list[MessLocationResponse],
+)
+def get_battalion_mess_locations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not current_user.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="User is not assigned to a battalion",
+        )
+
+    mess_locations = (
+        db.query(MessLocation)
+        .filter(
+            MessLocation.battalion == current_user.battalion
+        )
+        .order_by(MessLocation.name.asc())
+        .all()
+    )
+
+    return mess_locations
