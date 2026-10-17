@@ -5,7 +5,7 @@ import {
     Pressable,
     Modal
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import { useAuth } from "../../auth/AuthContext";
 import {
@@ -25,6 +25,9 @@ import AssignRouteModal from "@/routes/components/AssignRouteModal";
 
 import UsersTable from "@/routes/components/UserTable";
 import RoutesTable from "@/routes/components/RoutesTable";
+import MessLocationsTable from "@/routes/components/MessLocationsTable";
+import type { MessLocation } from "@/types/messLocation";
+import { getMessLocations } from "@/api/routes";
 import AddRouteModal from "@/routes/components/AddRouteModal";
 import UnassignRouteModal from "@/routes/components/UnassignRouteModal";
 import RouteDetails from "@/routes/components/RouteDetails";
@@ -68,6 +71,17 @@ export default function RoutesScreen() {
     const [savingDriver, setSavingDriver] = useState(false);
     const [assignDriverError, setAssignDriverError] =
         useState<string | null>(null);
+
+    const [messLocations, setMessLocations] = useState<MessLocation[]>([]);
+    const [messLocationsLoading, setMessLocationsLoading] = useState(false);
+    const [messLocationsError, setMessLocationsError] = useState<string | null>(null);
+
+    const [isAddMessLocationModalOpen, setIsAddMessLocationModalOpen] =
+        useState(false);
+    const [editingMessLocation, setEditingMessLocation] =
+        useState<MessLocation | null>(null);
+    const [deletingMessLocation, setDeletingMessLocation] =
+        useState<MessLocation | null>(null);
 
     const handleAssignDriver = (route: Route) => {
         setAssignDriverError(null);
@@ -257,6 +271,32 @@ export default function RoutesScreen() {
         }
     };
 
+    const loadMessLocations = useCallback(async () => {
+        if (!accessToken) {
+            return;
+        }
+
+        try {
+            setMessLocationsLoading(true);
+            setMessLocationsError(null);
+
+            const data = await getMessLocations(accessToken);
+            setMessLocations(data);
+        } catch (error) {
+            setMessLocationsError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to fetch mess locations"
+            );
+        } finally {
+            setMessLocationsLoading(false);
+        }
+    }, [accessToken]);
+
+    useEffect(() => {
+        loadMessLocations();
+    }, [loadMessLocations]);
+
     useEffect(() => {
         loadUsers();
     }, [accessToken]);
@@ -315,6 +355,15 @@ export default function RoutesScreen() {
                     error={userError}
                     onAssignUser={handleAssignUser}
                     onUnassignUser={handleUnassignUser}
+                />
+
+                <MessLocationsTable
+                    messLocations={messLocations}
+                    loading={messLocationsLoading}
+                    error={messLocationsError}
+                    onAddMessLocation={() => setIsAddMessLocationModalOpen(true)}
+                    onEditMessLocation={setEditingMessLocation}
+                    onDeleteMessLocation={setDeletingMessLocation}
                 />
 
                 <View style={styles.routesTableSection}>

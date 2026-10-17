@@ -1,3 +1,5 @@
+import { MessLocation } from "@/types/messLocation";
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export type RouteDriver = {
@@ -393,4 +395,26 @@ export async function getBookingDistances(
         distanceMeters: distances[index] ?? Infinity,
         durationSeconds: durations[index] ?? Infinity,
     }));
+}
+
+export async function getMessLocations(
+    accessToken: string
+): Promise<MessLocation[]> {
+    const response = await fetch(`${API_URL}/users/mess-locations`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        throw new Error(
+            errorData?.detail || "Failed to fetch mess locations"
+        );
+    }
+
+    return response.json();
 }
