@@ -20,11 +20,13 @@ from schemas.meal_booking import (
     MealBookingResponse,
     CancelUserBookingRequest
 )
-from models.location import Location
+from models.location import Location, MessLocation
 from schemas.location import (
     CreateLocationRequest,
     LocationResponse,
-    UpdateLocationRequest
+    UpdateLocationRequest,
+    CreateMessLocationRequest,
+    MessLocationResponse
 )
 from models.route_location import RouteLocation
 from models.route import Route
@@ -630,3 +632,33 @@ def delete_route_location(
     return {
         "message": "Location removed from route successfully",
     }
+
+@router.post(
+    "/mess-locations",
+    response_model=MessLocationResponse,
+    status_code=201,
+)
+def create_mess_location(
+    request: CreateMessLocationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
+    mess_location = MessLocation(
+        name=request.name,
+        battalion=admin.battalion,
+        latitude=request.latitude,
+        longitude=request.longitude,
+        landmark=request.landmark,
+    )
+
+    db.add(mess_location)
+    db.commit()
+    db.refresh(mess_location)
+
+    return mess_location
