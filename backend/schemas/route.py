@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CreateRouteRequest(BaseModel):
@@ -57,3 +57,8 @@ class DriverRouteAssignmentResponse(BaseModel):
     lunch_count: int
     dinner_count: int
     book_date: date
+
+
+class AddRouteMessLocationRequest(BaseModel):
+    mess_location_id: UUID
+    stop_order: int | None = Field(default=None, gt=0)

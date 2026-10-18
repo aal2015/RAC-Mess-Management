@@ -35,6 +35,10 @@ from schemas.route import (
     UpdateRouteLocationRequest,
     AddRouteLocationRequest,
 )
+from models.route_location import RouteLocation
+from models.route import Route
+from models.location import MessLocation
+from schemas.route import AddRouteMessLocationRequest
 
 
 router = APIRouter(
@@ -662,3 +666,95 @@ def create_mess_location(
     db.refresh(mess_location)
 
     return mess_location
+
+@router.post("/routes/{route_id}/mess-locations", status_code=201)
+def assign_mess_location_to_route(
+    route_id: UUID,
+    request: AddRouteMessLocationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
+    route = (
+        db.query(Route)
+        .filter(
+            Route.id == route_id,
+            Route.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not route:
+        raise HTTPException(
+            status_code=404,
+            detail="Route not found in your battalion",
+        )
+
+    mess_location = (
+        db.query(MessLocation)
+        .filter(
+            MessLocation.id == request.mess_location_id,
+            MessLocation.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not mess_location:
+        raise HTTPException(
+            status_code=404,
+            detail="Mess location not found in your battalion",
+        )
+
+    existing = (
+        db.query(RouteLocation)
+        .filter(
+            RouteLocation.route_id == route.id,
+            RouteLocation.mess_location_id == mess_location.id,
+        )
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Mess location is already assigned to this route",
+        )
+
+    if request.stop_order is not None:
+        order_exists = (
+            db.query(RouteLocation)
+            .filter(
+                RouteLocation.route_id == route.id,
+                RouteLocation.stop_order == request.stop_order,
+            )
+            .first()
+        )
+
+        if order_exists:
+            raise HTTPException(
+                status_code=409,
+                detail="This stop order is already used by the route",
+            )
+
+    assignment = RouteLocation(
+        route_id=route.id,
+        mess_location_id=mess_location.id,
+        location_id=None,
+        stop_order=request.stop_order,
+    )
+
+    db.add(assignment)
+    db.commit()
+    db.refresh(assignment)
+
+    return {
+        "id": assignment.id,
+        "route_id": assignment.route_id,
+        "mess_location_id": assignment.mess_location_id,
+        "stop_order": assignment.stop_order,
+    }
