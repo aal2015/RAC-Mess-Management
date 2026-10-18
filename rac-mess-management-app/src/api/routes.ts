@@ -418,3 +418,38 @@ export async function getMessLocations(
 
     return response.json();
 }
+
+
+export type CreateMessLocationPayload = {
+  name: string;
+  latitude: number;
+  longitude: number;
+  landmark: string | null;
+};
+
+export async function createMessLocation(
+  accessToken: string,
+  payload: CreateMessLocationPayload
+) {
+  const response = await fetch(
+    `${API_URL}/admin/mess-locations`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      errorData?.detail || "Failed to create mess location"
+    );
+  }
+
+  return response.json();
+}

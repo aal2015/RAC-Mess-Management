@@ -27,7 +27,7 @@ import UsersTable from "@/routes/components/UserTable";
 import RoutesTable from "@/routes/components/RoutesTable";
 import MessLocationsTable from "@/routes/components/MessLocationsTable";
 import type { MessLocation } from "@/types/messLocation";
-import { getMessLocations } from "@/api/routes";
+import { getMessLocations, createMessLocation } from "@/api/routes";
 import AddRouteModal from "@/routes/components/AddRouteModal";
 import UnassignRouteModal from "@/routes/components/UnassignRouteModal";
 import RouteDetails from "@/routes/components/RouteDetails";
@@ -35,6 +35,10 @@ import DeleteRouteModal from "@/routes/components/DeleteRouteModal";
 import AssignDriverModal, {
     type Driver,
 } from "@/routes/components/AssignDriverModal";
+import AddMessLocationModal, {
+    type MessLocationSearchResult,
+} from "@/routes/components/AddMessLocationModal";
+
 import { styles } from "../../user/styles/routes.styles";
 
 export default function RoutesScreen() {
@@ -82,6 +86,45 @@ export default function RoutesScreen() {
         useState<MessLocation | null>(null);
     const [deletingMessLocation, setDeletingMessLocation] =
         useState<MessLocation | null>(null);
+
+    const [isCreatingMessLocation, setIsCreatingMessLocation] =
+        useState(false);
+
+    const [createMessLocationError, setCreateMessLocationError] =
+        useState<string | null>(null);
+
+    const handleCreateMessLocation = async (data: {
+        name: string;
+        latitude: number;
+        longitude: number;
+        landmark: string | null;
+    }) => {
+        if (!accessToken) {
+            setCreateMessLocationError("You must be logged in.");
+            return;
+        }
+
+        try {
+            setIsCreatingMessLocation(true);
+            setCreateMessLocationError(null);
+
+            await createMessLocation(accessToken, data);
+
+            await loadMessLocations();
+
+            setIsAddMessLocationModalOpen(false);
+        } catch (error) {
+            console.error("Failed to create mess location:", error);
+
+            setCreateMessLocationError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to create mess location."
+            );
+        } finally {
+            setIsCreatingMessLocation(false);
+        }
+    };
 
     const handleAssignDriver = (route: Route) => {
         setAssignDriverError(null);
@@ -505,6 +548,20 @@ export default function RoutesScreen() {
                     setAssignDriverError(null);
                 }}
                 onConfirm={handleConfirmAssignDriver}
+            />
+
+            <AddMessLocationModal
+                visible={isAddMessLocationModalOpen}
+                loading={isCreatingMessLocation}
+                error={createMessLocationError}
+                accessToken={accessToken}
+                onClose={() => {
+                    if (isCreatingMessLocation) return;
+
+                    setIsAddMessLocationModalOpen(false);
+                    setCreateMessLocationError(null);
+                }}
+                onSubmit={handleCreateMessLocation}
             />
 
             <Modal
