@@ -95,11 +95,26 @@ export default function AuthenticatedLayout() {
           name="users"
           options={{
             href: isUserOrDriver
-              ? null :"/users",
+              ? null : "/users",
             title: "Users",
             tabBarIcon: ({ color, size }) => (
               <Ionicons
                 name="people"
+                size={size}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="locations"
+          options={{
+            href: isAdmin ? "/locations" : null,
+            title: "Locations",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons
+                name="location-outline"
                 size={size}
                 color={color}
               />
