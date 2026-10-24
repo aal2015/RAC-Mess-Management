@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class CreateRouteRequest(BaseModel):
@@ -42,11 +42,12 @@ class UpdateRouteLocationRequest(BaseModel):
 
 
 class RouteLocationResponse(BaseModel):
+    id: UUID
     route_id: UUID
     location_id: UUID
-    stop_order: int | None
+    stop_order: int | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DriverRouteAssignmentResponse(BaseModel):
