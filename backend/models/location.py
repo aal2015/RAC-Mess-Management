@@ -17,6 +17,11 @@ class Location(Base):
         default=uuid4,
     )
 
+    battalion: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
     latitude: Mapped[float] = mapped_column(
         Float,
         nullable=False,

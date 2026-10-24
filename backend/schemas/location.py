@@ -4,23 +4,27 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 class CreateLocationRequest(BaseModel):
-    username: str
-    latitude: float
-    longitude: float
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
     road_name: str | None = None
+
+class AssignLocationRequest(BaseModel):
+    location_id: UUID
 
 class LocationResponse(BaseModel):
     id: UUID
+    battalion: str
     latitude: float
     longitude: float
     road_name: str | None
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
+
 
 class UpdateLocationRequest(BaseModel):
-    latitude: float | None = None
-    longitude: float | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     road_name: str | None = None
 
 class ForwardGeocodeRequest(BaseModel):

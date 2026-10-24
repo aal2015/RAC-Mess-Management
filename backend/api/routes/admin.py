@@ -26,7 +26,8 @@ from schemas.location import (
     LocationResponse,
     UpdateLocationRequest,
     CreateMessLocationRequest,
-    MessLocationResponse
+    MessLocationResponse,
+    AssignLocationRequest
 )
 from models.route_location import RouteLocation
 from models.route import Route
@@ -280,19 +281,48 @@ def cancel_user_booking(
         "book_date": request.book_date,
     }
 
-@router.post(
-    "/locations",
-    response_model=LocationResponse,
-)
+@router.post("/locations", response_model=LocationResponse)
 def create_location(
     request: CreateLocationRequest,
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
+    location = Location(
+        battalion=admin.battalion,
+        latitude=request.latitude,
+        longitude=request.longitude,
+        road_name=request.road_name,
+    )
+
+    db.add(location)
+    db.commit()
+    db.refresh(location)
+
+    return location
+
+@router.put("/assign-location/{username}")
+def assign_user_location(
+    username: str,
+    request: AssignLocationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
     user = (
         db.query(User)
         .filter(
-            User.username == request.username,
+            User.username == username,
             User.battalion == admin.battalion,
         )
         .first()
@@ -304,27 +334,43 @@ def create_location(
             detail="User not found in your battalion",
         )
 
-    if user.location_id:
-        raise HTTPException(
-            status_code=409,
-            detail="User already has a location",
+    location = (
+        db.query(Location)
+        .filter(
+            Location.id == request.location_id,
+            Location.battalion == admin.battalion,
         )
-
-    location = Location(
-        latitude=request.latitude,
-        longitude=request.longitude,
-        road_name=request.road_name,
+        .first()
     )
 
-    db.add(location)
-    db.flush()
+    if not location:
+        raise HTTPException(
+            status_code=404,
+            detail="Location not found in your battalion",
+        )
 
-    user.location_id = location.id
+    if user.location_id == location.id:
+        return {
+            "message": "User is already assigned to this location",
+            "username": user.username,
+            "location_id": str(location.id),
+        }
 
-    db.commit()
-    db.refresh(location)
+    try:
+        user.location_id = location.id
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to assign location to user",
+        )
 
-    return location
+    return {
+        "message": "Location assigned successfully",
+        "username": user.username,
+        "location_id": str(location.id),
+    }
 
 @router.patch(
     "/locations/{username}",
@@ -336,6 +382,12 @@ def update_user_location(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
     user = (
         db.query(User)
         .filter(
@@ -360,9 +412,17 @@ def update_user_location(
     location = db.get(Location, user.location_id)
 
     if not location:
+        user.location_id = None
+        db.commit()
         raise HTTPException(
             status_code=404,
             detail="Location not found",
+        )
+
+    if location.battalion != admin.battalion:
+        raise HTTPException(
+            status_code=403,
+            detail="Location does not belong to your battalion",
         )
 
     if request.latitude is not None:
@@ -386,6 +446,12 @@ def delete_user_location(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
     user = (
         db.query(User)
         .filter(
@@ -407,25 +473,14 @@ def delete_user_location(
             detail="User does not have a location",
         )
 
-    location = db.get(Location, user.location_id)
-
-    if not location:
-        # Keep the user's relationship consistent
-        user.location_id = None
-        db.commit()
-
-        raise HTTPException(
-            status_code=404,
-            detail="Location not found",
-        )
-
+    # Only remove this user's assignment.
+    # Keep the shared Location record intact.
     user.location_id = None
-    db.delete(location)
 
     db.commit()
 
     return {
-        "message": "User location deleted successfully",
+        "message": "User location unassigned successfully",
         "username": user.username,
     }
 
@@ -461,13 +516,20 @@ def link_route_location(
             detail="Route not found in your battalion",
         )
 
-    location = db.get(Location, request.location_id)
+    location = (
+        db.query(Location)
+        .filter(
+            Location.id == request.location_id,
+            Location.battalion == admin.battalion,
+        )
+        .first()
+    )
 
     if not location:
         raise HTTPException(
             status_code=404,
-            detail="Location not found",
-        )
+        detail="Location not found in your battalion",
+    )
 
     existing = (
         db.query(RouteLocation)
