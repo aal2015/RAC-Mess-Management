@@ -135,6 +135,15 @@ def set_query_results(db, *results):
     ]
 
 
+def _query_with_result(result):
+    query = MagicMock()
+    query.filter.return_value = query
+    query.order_by.return_value = query
+    query.first.return_value = result
+    query.all.return_value = result if isinstance(result, list) else []
+    return query
+
+
 # --------------------------------------------------
 # POST /locations
 # --------------------------------------------------
@@ -799,5 +808,120 @@ def test_delete_route_location_link_not_found(
     assert response.json()["detail"] == (
         "Location is not assigned to this route"
     )
+    db.delete.assert_not_called()
+    db.commit.assert_not_called()
+
+
+# ==================================================
+# GET /locations/locations
+# ==================================================
+
+def test_get_locations_success(client, db, location):
+    location.created_at = datetime.now(timezone.utc)
+
+    query = db.query.return_value
+    query.filter.return_value = query
+    query.order_by.return_value = query
+    query.all.return_value = [location]
+
+    response = client.get("/locations/locations")
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["id"] == str(location.id)
+    assert data[0]["battalion"] == location.battalion
+    assert data[0]["latitude"] == location.latitude
+    assert data[0]["longitude"] == location.longitude
+    assert data[0]["road_name"] == location.road_name
+    assert data[0]["created_at"] is not None
+
+    db.query.assert_called_once_with(Location)
+    query.all.assert_called_once()
+
+def test_get_locations_empty(client, db):
+    set_query_results(db, [])
+
+    response = client.get("/locations/locations")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_get_locations_admin_without_battalion(client, admin):
+    admin.battalion = None
+
+    response = client.get("/locations/locations")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "Admin is not assigned to a battalion"
+    )
+
+
+# ==================================================
+# DELETE /admin/delete-locations/{location_id}
+# ==================================================
+
+def test_delete_location_success(client, db, location):
+    # First query finds the location.
+    set_query_results(db, location)
+
+    # Mock the bulk update of user references.
+    user_query = MagicMock()
+    user_filter = MagicMock()
+    user_query.filter.return_value = user_filter
+    user_filter.update.return_value = 2
+
+    # The first query is for Location; the second is for User.
+    db.query.side_effect = [
+        _query_with_result(location),
+        user_query,
+    ]
+
+    response = client.delete(
+        f"/admin/delete-locations/{location.id}"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["location_id"] == str(location.id)
+
+    user_filter.update.assert_called_once_with(
+        {User.location_id: None},
+        synchronize_session=False,
+    )
+    db.delete.assert_called_once_with(location)
+    db.commit.assert_called_once()
+
+
+def test_delete_location_not_found(client, db):
+    set_query_results(db, None)
+
+    response = client.delete(
+        f"/admin/delete-locations/{LOCATION_ID}"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == (
+        "Location not found in your battalion"
+    )
+
+    db.delete.assert_not_called()
+    db.commit.assert_not_called()
+
+
+def test_delete_location_admin_without_battalion(client, db, admin):
+    admin.battalion = None
+
+    response = client.delete(
+        f"/admin/delete-locations/{LOCATION_ID}"
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "Admin is not assigned to a battalion"
+    )
+
     db.delete.assert_not_called()
     db.commit.assert_not_called()
