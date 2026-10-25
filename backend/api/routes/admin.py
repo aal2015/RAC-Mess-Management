@@ -700,6 +700,60 @@ def delete_route_location(
         "message": "Location removed from route successfully",
     }
 
+@router.delete("/delete-locations/{location_id}")
+def delete_location(
+    location_id: UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
+    location = (
+        db.query(Location)
+        .filter(
+            Location.id == location_id,
+            Location.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not location:
+        raise HTTPException(
+            status_code=404,
+            detail="Location not found in your battalion",
+        )
+
+    try:
+        # Remove the reference from every user assigned to this location.
+        db.query(User).filter(
+            User.location_id == location.id,
+            User.battalion == admin.battalion,
+        ).update(
+            {User.location_id: None},
+            synchronize_session=False,
+        )
+
+        # Delete the location, not the users.
+        db.delete(location)
+        db.commit()
+
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete location",
+        )
+
+    return {
+        "message": "Location deleted successfully",
+        "location_id": str(location_id),
+    }
+
+
 @router.post(
     "/mess-locations",
     response_model=MessLocationResponse,

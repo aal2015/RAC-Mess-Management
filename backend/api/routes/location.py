@@ -7,9 +7,11 @@ from core.config import settings
 from api.deps import get_current_user
 from api.deps import get_current_admin
 from core.database import get_db
+from models.location import Location
 from schemas.location import (
     ForwardGeocodeRequest,
     ForwardGeocodeResponse,
+    LocationResponse
 )
 from models.user import User
 
@@ -63,4 +65,23 @@ def forward_geocode(
         latitude=float(result["lat"]),
         longitude=float(result["lon"]),
         display_name=result["display_name"],
+    )
+
+
+@router.get("/locations", response_model=list[LocationResponse])
+def get_locations(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
+    return (
+        db.query(Location)
+        .filter(Location.battalion == admin.battalion)
+        .order_by(Location.created_at.desc())
+        .all()
     )
