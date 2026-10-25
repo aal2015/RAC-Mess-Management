@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -9,46 +10,88 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../auth/AuthContext";
+import {
+  getLocations,
+  type Location,
+} from "@/api/location";
+import {
+  getBattalionUsersWithLocations,
+  type UserWithLocation,
+} from "@/api/users";
 
-type Location = {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  landmark?: string | null;
-};
-
-type AssignedUser = {
-  id: string;
-  name: string;
-  username: string;
-  phone?: string | null;
-  location_id?: string | null;
-};
-
-// Connect this screen to your existing locations API.
 export default function LocationsScreen() {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const router = useRouter();
 
   const [locations, setLocations] = useState<Location[]>([]);
-  const [users, setUsers] = useState<AssignedUser[]>([]);
+  const [users, setUsers] = useState<UserWithLocation[]>([]);
   const [selectedLocation, setSelectedLocation] =
     useState<Location | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // The API calls are connected in the next step.
-    // Avoid showing this page to non-admin users.
-    if (user?.role !== "admin") {
+    if (user?.role !== "admin" || !accessToken) {
       setLoading(false);
       return;
     }
 
-    // Replace this with your existing location and user API calls.
-    setLoading(false);
-  }, [user]);
+    let cancelled = false;
+
+    async function loadData() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [locationData, userData] = await Promise.all([
+          getLocations(accessToken!),
+          getBattalionUsersWithLocations(accessToken!),
+        ]);
+
+        if (cancelled) return;
+
+        // Keep one record per location.
+        setLocations(locationData);
+
+        // The backend joins users with routes, so one user may
+        // occur more than once in the response.
+        const uniqueUsers = Array.from(
+          new Map(
+            userData.map((item) => [item.id, item])
+          ).values()
+        );
+
+        setUsers(uniqueUsers);
+
+        // Keep the selected location current after refreshing.
+        setSelectedLocation((previous) =>
+          previous
+            ? locationData.find(
+                (location) => location.id === previous.id
+              ) ?? null
+            : null
+        );
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load locations"
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.role, accessToken]);
 
   if (user?.role !== "admin") {
     return (
@@ -60,9 +103,17 @@ export default function LocationsScreen() {
 
   const assignedUsers = selectedLocation
     ? users.filter(
-        (item) => item.location_id === selectedLocation.id
+        (item) => item.location?.id === selectedLocation.id
       )
     : [];
+
+  const getLocationLabel = (location: Location) =>
+    location.road_name || "Unnamed location";
+
+  const getAssignedCount = (location: Location) =>
+    users.filter(
+      (item) => item.location?.id === location.id
+    ).length;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -72,10 +123,19 @@ export default function LocationsScreen() {
       </Text>
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>All Locations</Text>
+        <View style={styles.sectionHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sectionTitle}>
+              All Locations
+            </Text>
+            <Text style={styles.muted}>
+              {locations.length} locations
+            </Text>
+          </View>
+        </View>
 
         {loading ? (
-          <ActivityIndicator />
+          <ActivityIndicator color="#0F2A4A" />
         ) : error ? (
           <Text style={styles.error}>{error}</Text>
         ) : locations.length === 0 ? (
@@ -95,19 +155,15 @@ export default function LocationsScreen() {
             >
               <View style={styles.locationInfo}>
                 <Text style={styles.locationName}>
-                  {location.name}
+                  {getLocationLabel(location)}
                 </Text>
                 <Text style={styles.muted}>
-                  {location.landmark || "No description"}
+                  {location.latitude}, {location.longitude}
                 </Text>
               </View>
 
               <Text style={styles.muted}>
-                {
-                  users.filter(
-                    (item) => item.location_id === location.id
-                  ).length
-                } users
+                {getAssignedCount(location)} users
               </Text>
             </Pressable>
           ))
@@ -117,16 +173,11 @@ export default function LocationsScreen() {
       {selectedLocation && (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>
-            {selectedLocation.name}
+            {getLocationLabel(selectedLocation)}
           </Text>
 
           <Text style={styles.muted}>
-            {selectedLocation.landmark || "No description"}
-          </Text>
-
-          <Text style={styles.detailLabel}>Coordinates</Text>
-          <Text>
-            {selectedLocation.latitude},{" "}
+            Coordinates: {selectedLocation.latitude},{" "}
             {selectedLocation.longitude}
           </Text>
 
@@ -134,7 +185,9 @@ export default function LocationsScreen() {
             Assigned Users ({assignedUsers.length})
           </Text>
 
-          {assignedUsers.length === 0 ? (
+          {loading ? (
+            <ActivityIndicator color="#0F2A4A" />
+          ) : assignedUsers.length === 0 ? (
             <Text style={styles.muted}>
               No users assigned to this location.
             </Text>
@@ -156,7 +209,13 @@ export default function LocationsScreen() {
                   <Text style={styles.muted}>
                     @{assignedUser.username}
                   </Text>
+                  {assignedUser.phone && (
+                    <Text style={styles.muted}>
+                      {assignedUser.phone}
+                    </Text>
+                  )}
                 </View>
+
                 <Text style={styles.link}>View</Text>
               </Pressable>
             ))
@@ -195,6 +254,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
     gap: 12,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   sectionTitle: {
     fontSize: 18,

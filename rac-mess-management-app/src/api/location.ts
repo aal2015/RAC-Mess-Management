@@ -7,6 +7,23 @@ export type Location = {
   road_name: string | null;
 };
 
+export type UserWithLocation = {
+  id: string;
+  username: string;
+  name: string;
+  phone: string | null;
+  role: string;
+  battalion: string | null;
+  bus: string | null;
+  is_active: boolean;
+  location: Location | null;
+  route: {
+    id: string;
+    route_number: number;
+    name: string;
+  } | null;
+};
+
 export type ForwardGeocodeResult = {
   latitude: number;
   longitude: number;
@@ -128,6 +145,29 @@ export async function updateUserLocation(
 
     throw new Error(
       data?.detail ?? "Failed to update location"
+    );
+  }
+
+  return response.json();
+}
+
+
+export async function getLocations(
+  accessToken: string
+): Promise<Location[]> {
+  const response = await fetch(`${API_URL}/locations/locations`, {
+    method: "GET",
+    headers: {
+      Accept: "*/*",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+
+    throw new Error(
+      data?.detail ?? "Failed to load locations"
     );
   }
 
