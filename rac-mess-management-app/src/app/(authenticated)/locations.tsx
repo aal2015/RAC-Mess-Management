@@ -1,97 +1,158 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
   View,
+  Text,
+  TextInput,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  StyleSheet,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "../../auth/AuthContext";
 import {
   getLocations,
   type Location,
-} from "@/api/location";
-import {
-  getBattalionUsersWithLocations,
   type UserWithLocation,
-} from "@/api/users";
+} from "@/api/location";
+import { getBattalionUsersWithLocations } from "@/api/users";
+import DataTable from "@/components/DataTable/DataTable";
+import type { DataTableColumn } from "@/components/DataTable/types";
+import LogoutButton from "../../components/LogoutButton";
+import { styles } from "../../user/styles/users.styles";
 
 export default function LocationsScreen() {
-  const { user, accessToken } = useAuth();
   const router = useRouter();
+  const { accessToken, logout, user } = useAuth();
 
   const [locations, setLocations] = useState<Location[]>([]);
   const [users, setUsers] = useState<UserWithLocation[]>([]);
   const [selectedLocation, setSelectedLocation] =
     useState<Location | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user?.role !== "admin" || !accessToken) {
-      setLoading(false);
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const itemsPerPage = 10;
+
+  const getLocationName = (location: Location) =>
+    location.road_name?.trim() ||
+    `Location (${location.latitude}, ${location.longitude})`;
+
+  const getAssignedCount = (location: Location) =>
+    users.filter(
+      (person) => person.location?.id === location.id
+    ).length;
+
+  const columns: DataTableColumn<Location>[] = [
+    {
+      key: "road_name",
+      title: "Location",
+      style: styles.nameColumn,
+      render: (location) => getLocationName(location),
+    },
+    {
+      key: "latitude",
+      title: "Coordinates",
+      style: styles.phoneColumn,
+      render: (location) =>
+        `${location.latitude}, ${location.longitude}`,
+    },
+    {
+      key: "id",
+      title: "Users",
+      style: styles.roleColumn,
+      render: (location) => getAssignedCount(location).toString(),
+    },
+  ];
+
+  const loadLocations = useCallback(async () => {
+    if (!accessToken) {
+      setIsLoading(false);
       return;
     }
 
-    let cancelled = false;
+    try {
+      setIsLoading(true);
+      setError("");
 
-    async function loadData() {
-      setLoading(true);
-      setError(null);
+      const [locationData, userData] = await Promise.all([
+        getLocations(accessToken),
+        getBattalionUsersWithLocations(accessToken),
+      ]);
 
-      try {
-        const [locationData, userData] = await Promise.all([
-          getLocations(accessToken!),
-          getBattalionUsersWithLocations(accessToken!),
-        ]);
+      // The users endpoint joins routes, so a user can appear
+      // more than once. Count each user only once.
+      const uniqueUsers = Array.from(
+        new Map(
+          userData.map((person) => [person.id, person])
+        ).values()
+      );
 
-        if (cancelled) return;
+      setLocations(locationData);
+      setUsers(uniqueUsers);
 
-        // Keep one record per location.
-        setLocations(locationData);
-
-        // The backend joins users with routes, so one user may
-        // occur more than once in the response.
-        const uniqueUsers = Array.from(
-          new Map(
-            userData.map((item) => [item.id, item])
-          ).values()
-        );
-
-        setUsers(uniqueUsers);
-
-        // Keep the selected location current after refreshing.
-        setSelectedLocation((previous) =>
-          previous
-            ? locationData.find(
-                (location) => location.id === previous.id
-              ) ?? null
-            : null
-        );
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Failed to load locations"
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+      setSelectedLocation((previous) =>
+        previous
+          ? locationData.find(
+            (location) => location.id === previous.id
+          ) ?? null
+          : null
+      );
+    } catch (err) {
+      if (err instanceof Error &&
+        err.message.toLowerCase().includes("unauthorized")) {
+        await logout();
+        return;
       }
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load locations."
+      );
+    } finally {
+      setIsLoading(false);
     }
+  }, [accessToken, logout]);
 
-    loadData();
+  useFocusEffect(
+    useCallback(() => {
+      loadLocations();
+    }, [loadLocations])
+  );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.role, accessToken]);
+  const filteredLocations = locations.filter((location) => {
+    const searchText = search.toLowerCase();
+
+    return (
+      getLocationName(location).toLowerCase().includes(searchText) ||
+      `${location.latitude}, ${location.longitude}`
+        .toLowerCase()
+        .includes(searchText)
+    );
+  });
+
+  const totalPages = Math.ceil(
+    filteredLocations.length / itemsPerPage
+  );
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+
+  const paginatedLocations = filteredLocations.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  const assignedUsers = selectedLocation
+    ? users.filter(
+      (person) =>
+        person.location?.id === selectedLocation.id
+    )
+    : [];
 
   if (user?.role !== "admin") {
     return (
@@ -101,213 +162,230 @@ export default function LocationsScreen() {
     );
   }
 
-  const assignedUsers = selectedLocation
-    ? users.filter(
-        (item) => item.location?.id === selectedLocation.id
-      )
-    : [];
-
-  const getLocationLabel = (location: Location) =>
-    location.road_name || "Unnamed location";
-
-  const getAssignedCount = (location: Location) =>
-    users.filter(
-      (item) => item.location?.id === location.id
-    ).length;
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Locations</Text>
-      <Text style={styles.subtitle}>
-        Manage delivery locations and assigned users.
-      </Text>
-
-      <View style={styles.card}>
-        <View style={styles.sectionHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.sectionTitle}>
-              All Locations
-            </Text>
-            <Text style={styles.muted}>
-              {locations.length} locations
-            </Text>
-          </View>
-        </View>
-
-        {loading ? (
-          <ActivityIndicator color="#0F2A4A" />
-        ) : error ? (
-          <Text style={styles.error}>{error}</Text>
-        ) : locations.length === 0 ? (
-          <Text style={styles.muted}>
-            No locations found.
-          </Text>
-        ) : (
-          locations.map((location) => (
-            <Pressable
-              key={location.id}
-              style={[
-                styles.locationRow,
-                selectedLocation?.id === location.id &&
-                  styles.selectedRow,
-              ]}
-              onPress={() => setSelectedLocation(location)}
-            >
-              <View style={styles.locationInfo}>
-                <Text style={styles.locationName}>
-                  {getLocationLabel(location)}
-                </Text>
-                <Text style={styles.muted}>
-                  {location.latitude}, {location.longitude}
-                </Text>
-              </View>
-
-              <Text style={styles.muted}>
-                {getAssignedCount(location)} users
-              </Text>
-            </Pressable>
-          ))
-        )}
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Location Management</Text>
+        <LogoutButton />
       </View>
 
-      {selectedLocation && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            {getLocationLabel(selectedLocation)}
-          </Text>
+      <View style={styles.content}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by location or coordinates"
+          value={search}
+          onChangeText={(text) => {
+            setSearch(text);
+            setCurrentPage(1);
+          }}
+        />
 
-          <Text style={styles.muted}>
-            Coordinates: {selectedLocation.latitude},{" "}
-            {selectedLocation.longitude}
-          </Text>
+        {isLoading ? (
+          <ActivityIndicator size="large" />
+        ) : error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : (
+          <>
+            <DataTable
+              data={paginatedLocations}
+              rowKey={(location) => location.id}
+              columns={columns}
+              pressableRows
+              onRowPress={setSelectedLocation}
+            />
 
-          <Text style={styles.detailLabel}>
-            Assigned Users ({assignedUsers.length})
-          </Text>
+            {filteredLocations.length === 0 && (
+              <Text style={styles.emptyText}>
+                No locations found.
+              </Text>
+            )}
 
-          {loading ? (
-            <ActivityIndicator color="#0F2A4A" />
-          ) : assignedUsers.length === 0 ? (
-            <Text style={styles.muted}>
-              No users assigned to this location.
-            </Text>
-          ) : (
-            assignedUsers.map((assignedUser) => (
-              <Pressable
-                key={assignedUser.id}
-                style={styles.userRow}
-                onPress={() =>
-                  router.push(
-                    `/admin/users/${assignedUser.id}` as never
-                  )
-                }
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.locationName}>
-                    {assignedUser.name}
+            {totalPages > 1 && (
+              <View style={styles.pagination}>
+                <Pressable
+                  style={[
+                    styles.pageButton,
+                    currentPage === 1 && styles.disabledButton,
+                  ]}
+                  disabled={currentPage === 1}
+                  onPress={() =>
+                    setCurrentPage((page) => page - 1)
+                  }
+                >
+                  <Text style={styles.pageButtonText}>
+                    Previous
                   </Text>
-                  <Text style={styles.muted}>
-                    @{assignedUser.username}
+                </Pressable>
+
+                <Text style={styles.pageInfo}>
+                  Page {currentPage} of {totalPages}
+                </Text>
+
+                <Pressable
+                  style={[
+                    styles.pageButton,
+                    currentPage === totalPages &&
+                    styles.disabledButton,
+                  ]}
+                  disabled={currentPage === totalPages}
+                  onPress={() =>
+                    setCurrentPage((page) => page + 1)
+                  }
+                >
+                  <Text style={styles.pageButtonText}>
+                    Next
                   </Text>
-                  {assignedUser.phone && (
-                    <Text style={styles.muted}>
-                      {assignedUser.phone}
+                </Pressable>
+              </View>
+            )}
+
+            {selectedLocation && (
+              <View style={detailStyles.card}>
+                <View style={detailStyles.sectionHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={detailStyles.title}>
+                      {getLocationName(selectedLocation)}
                     </Text>
-                  )}
+                    <Text style={detailStyles.subtitle}>
+                      Location details
+                    </Text>
+                  </View>
+
+                  <Pressable
+                    onPress={() => setSelectedLocation(null)}
+                  >
+                    <Text style={detailStyles.closeText}>
+                      Close
+                    </Text>
+                  </Pressable>
                 </View>
 
-                <Text style={styles.link}>View</Text>
-              </Pressable>
-            ))
-          )}
-        </View>
-      )}
+                <Text style={detailStyles.label}>
+                  Coordinates
+                </Text>
+                <Text style={detailStyles.value}>
+                  Latitude: {selectedLocation.latitude}
+                </Text>
+                <Text style={detailStyles.value}>
+                  Longitude: {selectedLocation.longitude}
+                </Text>
+
+                <View style={detailStyles.usersHeader}>
+                  <Text style={detailStyles.label}>
+                    Assigned Users
+                  </Text>
+                  <Text style={detailStyles.subtitle}>
+                    {assignedUsers.length} users
+                  </Text>
+                </View>
+
+                {assignedUsers.length === 0 ? (
+                  <Text style={detailStyles.subtitle}>
+                    No users are assigned to this location.
+                  </Text>
+                ) : (
+                  assignedUsers.map((person) => (
+                    <Pressable
+                      key={person.id}
+                      style={detailStyles.userRow}
+                      onPress={() =>
+                        router.push({
+                          pathname: "./user-detail/[id]",
+                          params: { id: person.id },
+                        })
+                      }
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={detailStyles.userName}>
+                          {person.name}
+                        </Text>
+                        <Text style={detailStyles.subtitle}>
+                          @{person.username}
+                        </Text>
+                        {person.phone && (
+                          <Text style={detailStyles.subtitle}>
+                            {person.phone}
+                          </Text>
+                        )}
+                      </View>
+
+                      <Text style={detailStyles.closeText}>
+                        View Details
+                      </Text>
+                    </Pressable>
+                  ))
+                )}
+              </View>
+            )}
+          </>
+        )}
+      </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    gap: 16,
-    paddingBottom: 32,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#0F2A4A",
-  },
-  subtitle: {
-    color: "#6B7280",
-    marginTop: -8,
-  },
+const detailStyles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
+    marginTop: 20,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    gap: 12,
+    gap: 10,
   },
   sectionHeader: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
   },
-  sectionTitle: {
-    fontSize: 18,
+  title: {
+    fontSize: 20,
     fontWeight: "700",
     color: "#0F2A4A",
   },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#D1D5DB",
-    gap: 12,
-  },
-  selectedRow: {
-    backgroundColor: "#EFF6FF",
-  },
-  locationInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  locationName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  muted: {
+  subtitle: {
     fontSize: 13,
     color: "#6B7280",
   },
-  error: {
-    color: "#B91C1C",
-  },
-  detailLabel: {
-    marginTop: 8,
+  label: {
+    fontSize: 16,
     fontWeight: "600",
+    color: "#0F2A4A",
+  },
+  value: {
+    fontSize: 14,
     color: "#374151",
+  },
+  usersHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
   },
   userRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#D1D5DB",
     gap: 12,
   },
-  link: {
+  userName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  closeText: {
     color: "#0F2A4A",
     fontWeight: "600",
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
