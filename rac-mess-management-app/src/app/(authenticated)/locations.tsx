@@ -171,6 +171,15 @@ export default function LocationsScreen() {
       </View>
 
       <View style={styles.content}>
+        <Pressable
+          style={styles.addButton}
+          onPress={() => router.push("/location/add")}
+        >
+          <Text style={styles.addButtonText}>
+            Add Location
+          </Text>
+        </Pressable>
+
         <TextInput
           style={styles.searchInput}
           placeholder="Search by location or coordinates"

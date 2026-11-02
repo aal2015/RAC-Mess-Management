@@ -173,3 +173,29 @@ export async function getLocations(
 
   return response.json();
 }
+
+export async function createLocation(
+  accessToken: string,
+  locationData: {
+    latitude: number;
+    longitude: number;
+    road_name: string;
+  }
+): Promise<Location> {
+  const response = await fetch(`${API_URL}/admin/locations`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(locationData),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.detail ?? "Failed to create location");
+  }
+
+  return response.json();
+}
