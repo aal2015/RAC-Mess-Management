@@ -16,6 +16,7 @@ import {
   type Location,
   type UserWithLocation,
 } from "@/api/location";
+import LocationDetails from "@/components/location/LocationDetails";
 import { getBattalionUsersWithLocations } from "@/api/users";
 import DataTable from "@/components/DataTable/DataTable";
 import type { DataTableColumn } from "@/components/DataTable/types";
@@ -240,82 +241,17 @@ export default function LocationsScreen() {
             )}
 
             {selectedLocation && (
-              <View style={detailStyles.card}>
-                <View style={detailStyles.sectionHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={detailStyles.title}>
-                      {getLocationName(selectedLocation)}
-                    </Text>
-                    <Text style={detailStyles.subtitle}>
-                      Location details
-                    </Text>
-                  </View>
-
-                  <Pressable
-                    onPress={() => setSelectedLocation(null)}
-                  >
-                    <Text style={detailStyles.closeText}>
-                      Close
-                    </Text>
-                  </Pressable>
-                </View>
-
-                <Text style={detailStyles.label}>
-                  Coordinates
-                </Text>
-                <Text style={detailStyles.value}>
-                  Latitude: {selectedLocation.latitude}
-                </Text>
-                <Text style={detailStyles.value}>
-                  Longitude: {selectedLocation.longitude}
-                </Text>
-
-                <View style={detailStyles.usersHeader}>
-                  <Text style={detailStyles.label}>
-                    Assigned Users
-                  </Text>
-                  <Text style={detailStyles.subtitle}>
-                    {assignedUsers.length} users
-                  </Text>
-                </View>
-
-                {assignedUsers.length === 0 ? (
-                  <Text style={detailStyles.subtitle}>
-                    No users are assigned to this location.
-                  </Text>
-                ) : (
-                  assignedUsers.map((person) => (
-                    <Pressable
-                      key={person.id}
-                      style={detailStyles.userRow}
-                      onPress={() =>
-                        router.push({
-                          pathname: "./user-detail/[id]",
-                          params: { id: person.id },
-                        })
-                      }
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={detailStyles.userName}>
-                          {person.name}
-                        </Text>
-                        <Text style={detailStyles.subtitle}>
-                          @{person.username}
-                        </Text>
-                        {person.phone && (
-                          <Text style={detailStyles.subtitle}>
-                            {person.phone}
-                          </Text>
-                        )}
-                      </View>
-
-                      <Text style={detailStyles.closeText}>
-                        View Details
-                      </Text>
-                    </Pressable>
-                  ))
-                )}
-              </View>
+              <LocationDetails
+                location={selectedLocation}
+                assignedUsers={assignedUsers}
+                onClose={() => setSelectedLocation(null)}
+                onUserPress={(userId) =>
+                  router.push({
+                    pathname: "./user-detail/[id]",
+                    params: { id: userId },
+                  })
+                }
+              />
             )}
           </>
         )}
