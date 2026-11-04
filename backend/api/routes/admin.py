@@ -28,7 +28,7 @@ from schemas.location import (
     UpdateLocationRequest,
     CreateMessLocationRequest,
     MessLocationResponse,
-    AssignLocationRequest
+    AssignLocationRequest,
 )
 from models.route_location import RouteLocation
 from models.route import Route
@@ -437,6 +437,50 @@ def update_user_location(
 
     db.commit()
     db.refresh(location)
+
+    return location
+
+@router.patch("/locations/{username}/assign")
+def assign_user_location(
+    username: str,
+    request: AssignLocationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    if not admin.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin is not assigned to a battalion",
+        )
+
+    user = (
+        db.query(User)
+        .filter(
+            User.username == username,
+            User.battalion == admin.battalion,
+        )
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found in your battalion",
+        )
+
+    location = db.query(Location).filter(
+        Location.id == request.location_id,
+        Location.battalion == admin.battalion,
+    ).first()
+
+    if not location:
+        raise HTTPException(
+            status_code=404,
+            detail="Location not found in your battalion",
+        )
+
+    user.location_id = location.id
+    db.commit()
 
     return location
 
