@@ -221,6 +221,11 @@ export default function AuthenticatedLayout() {
           name="driver/active-delivery"
           options={{ href: null }}
         />
+
+        <Tabs.Screen
+          name="location/add"
+          options={{ href: null }}
+        />
       </Tabs>
     </View>
   );

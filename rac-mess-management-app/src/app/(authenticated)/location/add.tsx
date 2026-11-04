@@ -261,7 +261,6 @@ const pageStyles = StyleSheet.create({
   },
   cancelButton: {
     alignItems: "center",
-    padding: 12,
   },
   cancelText: {
     color: "#555555",
