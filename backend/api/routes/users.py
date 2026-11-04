@@ -379,3 +379,24 @@ def get_battalion_mess_locations(
     )
 
     return mess_locations
+
+
+@router.get("/locations", response_model=list[LocationResponse])
+def get_locations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not current_user.battalion:
+        raise HTTPException(
+            status_code=400,
+            detail="User is not assigned to a battalion",
+        )
+
+    locations = (
+        db.query(Location)
+        .filter(Location.battalion == current_user.battalion)
+        .order_by(Location.created_at.desc())
+        .all()
+    )
+
+    return locations
