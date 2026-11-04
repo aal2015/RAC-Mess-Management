@@ -151,6 +151,34 @@ export async function updateUserLocation(
   return response.json();
 }
 
+export async function assignUserLocation(
+    accessToken: string,
+    username: string,
+    locationId: string
+): Promise<Location> {
+    const response = await fetch(
+        `${API_URL}/admin/locations/${encodeURIComponent(username)}/assign`,
+        {
+            method: "PATCH",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+                location_id: locationId,
+            }),
+        }
+    );
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.detail ?? "Failed to assign location");
+    }
+
+    return response.json();
+}
+
 
 export async function getLocations(
   accessToken: string
