@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
     ActivityIndicator,
@@ -16,6 +16,7 @@ import {
 import {
     getActiveTrackingSession,
     updateTrackingTarget,
+    updateTrackingLocation,
     type TrackingSession,
 } from "@/api/tracking";
 import { useAuth } from "@/auth/AuthContext";
@@ -46,6 +47,7 @@ export default function ActiveDelivery() {
     const [targetUpdateError, setTargetUpdateError] = useState<string | null>(null);
 
     const router = useRouter();
+    const { accessToken } = useAuth();
 
     const params = useLocalSearchParams<{
         sessionId?: string | string[];
@@ -82,7 +84,7 @@ export default function ActiveDelivery() {
         selectedMeal
     );
     const isRestoredSessionValid = restoredSession !== null;
-    
+
     const [trackingSession, setTrackingSession] =
         useState<TrackingSession | null>(
             isRestoredSessionValid ? restoredSession : null
@@ -103,26 +105,7 @@ export default function ActiveDelivery() {
     const [sessionValidated, setSessionValidated] =
         useState(isRestoredSessionValid);
 
-    if (!sessionId) {
-        return (
-            <View style={{ padding: 20, gap: 12 }}>
-                <Text style={{ fontSize: 20, fontWeight: "700" }}>
-                    Tracking session unavailable
-                </Text>
 
-                <Text>
-                    The tracking session ID is missing. Please return to
-                    the Delivery screen and try again.
-                </Text>
-
-                <Pressable onPress={() => router.replace("/delivery")}>
-                    <Text style={{ color: "#2563EB" }}>
-                        ← Back to Delivery
-                    </Text>
-                </Pressable>
-            </View>
-        );
-    }
 
     const handleSelectDestination = async (locationId: string) => {
         if (!accessToken || !trackingSession) {
@@ -156,7 +139,6 @@ export default function ActiveDelivery() {
         }
     };
 
-    const { accessToken } = useAuth();
 
     const [bookings, setBookings] = useState<DeliveryUserResponse[]>([]);
     const [driverLocation, setDriverLocation] = useState(() =>
@@ -505,6 +487,79 @@ export default function ActiveDelivery() {
         );
     }
 
+    const locationUpdateInProgress = useRef(false);
+
+    useEffect(() => {
+        if (
+            !sessionValidated ||
+            !trackingSession ||
+            !trackingSession.is_active ||
+            !accessToken
+        ) {
+            return;
+        }
+
+        // Capture non-null values for the async function.
+        const sessionId = trackingSession.id;
+        const token = accessToken;
+
+        let cancelled = false;
+
+        async function updateDriverLocation() {
+            if (locationUpdateInProgress.current) {
+                return;
+            }
+
+            locationUpdateInProgress.current = true;
+
+            try {
+                const location = await getCurrentBrowserLocation();
+
+                if (cancelled || !location) return;
+
+                setDriverLocation({
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                });
+
+                await updateTrackingLocation(
+                    token,
+                    sessionId,
+                    {
+                        latitude: location.latitude,
+                        longitude: location.longitude,
+                    }
+                );
+
+            } catch (error) {
+                if (!cancelled) {
+                    console.error("Failed to update driver location:", error);
+                }
+            } finally {
+                locationUpdateInProgress.current = false;
+            }
+        }
+
+        updateDriverLocation();
+
+        const intervalId = setInterval(
+            updateDriverLocation,
+            30_000
+        );
+
+        return () => {
+            cancelled = true;
+            clearInterval(intervalId);
+        };
+
+    }, [
+        sessionValidated,
+        trackingSession?.id,
+        trackingSession?.is_active,
+        accessToken,
+    ]);
+
+
     if (!bookDate || !selectedMeal) {
         return (
             <View style={{ padding: 20, gap: 12 }}>
@@ -552,6 +607,28 @@ export default function ActiveDelivery() {
             </View>
         );
     }
+
+    if (!sessionId) {
+        return (
+            <View style={{ padding: 20, gap: 12 }}>
+                <Text style={{ fontSize: 20, fontWeight: "700" }}>
+                    Tracking session unavailable
+                </Text>
+
+                <Text>
+                    The tracking session ID is missing. Please return to
+                    the Delivery screen and try again.
+                </Text>
+
+                <Pressable onPress={() => router.replace("/delivery")}>
+                    <Text style={{ color: "#2563EB" }}>
+                        ← Back to Delivery
+                    </Text>
+                </Pressable>
+            </View>
+        );
+    }
+
 
     return (
         <ScrollView
