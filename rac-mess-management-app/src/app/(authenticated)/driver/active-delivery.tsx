@@ -16,6 +16,10 @@ import {
     getBookingDistances,
     type DeliveryUserResponse,
 } from "@/api/routes";
+import {
+    getActiveTrackingSession,
+    type TrackingSession,
+} from "@/api/tracking";
 import { useAuth } from "@/auth/AuthContext";
 import { getCurrentBrowserLocation } from "@/utils/location";
 import ActiveDeliveryMap from "@/components/ActiveDeliveryMap";
@@ -31,6 +35,8 @@ export default function ActiveDelivery() {
     const router = useRouter();
 
     const params = useLocalSearchParams<{
+        sessionId?: string | string[];
+        session?: string | string[];
         bookDate?: string | string[];
         meal?: string | string[];
         routeNumber?: string | string[];
@@ -74,15 +80,89 @@ export default function ActiveDelivery() {
         ? params.dinnerCount[0]
         : params.dinnerCount;
 
+    const sessionId = Array.isArray(params.sessionId)
+        ? params.sessionId[0]
+        : params.sessionId;
+
+    const rawSession = Array.isArray(params.session)
+        ? params.session[0]
+        : params.session;
+
+    const restoredSession: TrackingSession | null = (() => {
+        if (!rawSession) return null;
+
+        try {
+            return JSON.parse(rawSession) as TrackingSession;
+        } catch {
+            return null;
+        }
+    })();
+
+    const isRestoredSessionValid = Boolean(
+        restoredSession &&
+        restoredSession.id === sessionId &&
+        restoredSession.is_active &&
+        restoredSession.book_date === bookDate &&
+        restoredSession.meal_type === selectedMeal
+    );
+
+    const [trackingSession, setTrackingSession] =
+        useState<TrackingSession | null>(
+            isRestoredSessionValid ? restoredSession : null
+        );
+
+    const [sessionLoading, setSessionLoading] = useState(
+        !isRestoredSessionValid
+    );
+
+    const [sessionError, setSessionError] = useState<string | null>(
+        isRestoredSessionValid
+            ? null
+            : restoredSession
+                ? "The restored tracking session is invalid."
+                : null
+    );
+
+    const [sessionValidated, setSessionValidated] =
+        useState(isRestoredSessionValid);
+
+    if (!sessionId) {
+        return (
+            <View style={{ padding: 20, gap: 12 }}>
+                <Text style={{ fontSize: 20, fontWeight: "700" }}>
+                    Tracking session unavailable
+                </Text>
+
+                <Text>
+                    The tracking session ID is missing. Please return to
+                    the Delivery screen and try again.
+                </Text>
+
+                <Pressable onPress={() => router.replace("/delivery")}>
+                    <Text style={{ color: "#2563EB" }}>
+                        ← Back to Delivery
+                    </Text>
+                </Pressable>
+            </View>
+        );
+    }
+
     const { accessToken } = useAuth();
 
     const [bookings, setBookings] =
         useState<DeliveryUserResponse[]>([]);
 
-    const [driverLocation, setDriverLocation] = useState<{
-        latitude: number;
-        longitude: number;
-    } | null>(null);
+    const [driverLocation, setDriverLocation] = useState(() =>
+        isRestoredSessionValid && restoredSession
+            ? {
+                latitude: restoredSession.current_latitude,
+                longitude: restoredSession.current_longitude,
+            }
+            : null
+    );
+
+    const [usingLastKnownLocation, setUsingLastKnownLocation] =
+        useState(isRestoredSessionValid);
 
     const [distancesByBookingId, setDistancesByBookingId] =
         useState<Record<string, {
@@ -106,8 +186,91 @@ export default function ActiveDelivery() {
     const [distanceError, setDistanceError] =
         useState<string | null>(null);
 
+    useEffect(() => {
+        let cancelled = false;
+
+        async function restoreSession() {
+            if (isRestoredSessionValid) {
+                return;
+            }
+
+            if (!accessToken) {
+                setSessionError("You are not authenticated.");
+                setSessionLoading(false);
+                return;
+            }
+
+            try {
+                setSessionLoading(true);
+                setSessionError(null);
+
+                const response = await getActiveTrackingSession(accessToken);
+
+                if (cancelled) return;
+
+                if (
+                    !response.has_active_session ||
+                    !response.session
+                ) {
+                    throw new Error("No active delivery session was found.");
+                }
+
+                const session = response.session;
+
+                if (
+                    session.id !== sessionId ||
+                    !session.is_active ||
+                    session.book_date !== bookDate ||
+                    session.meal_type !== selectedMeal
+                ) {
+                    throw new Error(
+                        "The active tracking session does not match this delivery."
+                    );
+                }
+
+                setTrackingSession(session);
+
+                setDriverLocation({
+                    latitude: session.current_latitude,
+                    longitude: session.current_longitude,
+                });
+
+                setUsingLastKnownLocation(true);
+                setSessionValidated(true);
+            } catch (error) {
+                if (!cancelled) {
+                    setSessionError(
+                        error instanceof Error
+                            ? error.message
+                            : "Failed to restore tracking session."
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setSessionLoading(false);
+                }
+            }
+        }
+
+        restoreSession();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        accessToken,
+        sessionId,
+        bookDate,
+        selectedMeal,
+        isRestoredSessionValid,
+    ]);
+
     // 1. Get driver's browser location.
     useEffect(() => {
+        if (!sessionValidated || !trackingSession) {
+            return;
+        }
+
         let cancelled = false;
 
         async function fetchDriverLocation() {
@@ -119,13 +282,14 @@ export default function ActiveDelivery() {
 
                 if (!cancelled) {
                     setDriverLocation(location);
+                    setUsingLastKnownLocation(false);
                 }
             } catch (error) {
                 if (!cancelled) {
                     setLocationError(
                         error instanceof Error
                             ? error.message
-                            : "Failed to get your location.",
+                            : "Failed to get your location."
                     );
                 }
             } finally {
@@ -140,7 +304,7 @@ export default function ActiveDelivery() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [sessionValidated, trackingSession]);
 
     // 2. Fetch bookings for the date and meal passed in navigation.
     useEffect(() => {
@@ -393,6 +557,35 @@ export default function ActiveDelivery() {
                     The booking date or meal was not passed correctly.
                     Please return to the Delivery screen and try again.
                 </Text>
+                <Pressable onPress={() => router.back()}>
+                    <Text style={{ color: "#2563EB" }}>
+                        ← Back to Delivery
+                    </Text>
+                </Pressable>
+            </View>
+        );
+    }
+
+    if (sessionLoading) {
+        return (
+            <View style={{ padding: 20, gap: 12 }}>
+                <ActivityIndicator />
+                <Text>Restoring delivery session...</Text>
+            </View>
+        );
+    }
+
+    if (sessionError || !sessionValidated) {
+        return (
+            <View style={{ padding: 20, gap: 12 }}>
+                <Text style={{ fontSize: 20, fontWeight: "700" }}>
+                    Unable to restore delivery
+                </Text>
+
+                <Text style={{ color: "#DC2626" }}>
+                    {sessionError ?? "The tracking session is invalid."}
+                </Text>
+
                 <Pressable onPress={() => router.back()}>
                     <Text style={{ color: "#2563EB" }}>
                         ← Back to Delivery

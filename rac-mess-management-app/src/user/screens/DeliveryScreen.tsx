@@ -22,6 +22,8 @@ type DeliveryScreenProps = {
     onSelectMeal: (meal: MealType) => void;
     loading?: boolean;
     onStartDelivery: () => void;
+    startingDelivery: boolean;
+    startError: string | null;
 };
 
 function formatDate(dateString: string) {
@@ -47,6 +49,8 @@ export default function DeliveryScreen({
     onSelectMeal,
     loading = false,
     onStartDelivery,
+    startingDelivery,
+    startError,
 }: DeliveryScreenProps) {
     const hasRoute = routeNumber !== null;
     const hasDeliveries = userCount > 0;
@@ -297,27 +301,41 @@ export default function DeliveryScreen({
             {/* Navigate to the separate active delivery page */}
             <Pressable
                 accessibilityRole="button"
-                accessibilityState={{ disabled: !canStart }}
-                disabled={!canStart}
+                accessibilityState={{
+                    disabled: !canStart || startingDelivery,
+                }}
+                disabled={!canStart || startingDelivery}
                 onPress={onStartDelivery}
                 style={({ pressed }) => [
                     styles.startButton,
-                    !canStart && styles.startButtonDisabled,
+                    (!canStart || startingDelivery) &&
+                    styles.startButtonDisabled,
                     pressed &&
-                        canStart &&
-                        styles.startButtonPressed,
+                    canStart &&
+                    !startingDelivery &&
+                    styles.startButtonPressed,
                 ]}
             >
-                <Ionicons
-                    name="navigate-outline"
-                    size={22}
-                    color="#FFFFFF"
-                />
+                {startingDelivery ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                    <Ionicons
+                        name="navigate-outline"
+                        size={22}
+                        color="#FFFFFF"
+                    />
+                )}
 
                 <Text style={styles.startButtonText}>
-                    Start Delivery
+                    {startingDelivery ? "Starting Delivery..." : "Start Delivery"}
                 </Text>
             </Pressable>
+
+            {startError && (
+                <Text style={{ color: "red", marginTop: 8 }}>
+                    {startError}
+                </Text>
+            )}
         </View>
     );
 }
