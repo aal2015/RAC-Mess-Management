@@ -26,6 +26,11 @@ export type UserWithLocation = {
     route: UserRoute | null;
 };
 
+export type UpdateMealBookingRequest = {
+    lunch: boolean;
+    dinner: boolean;
+};
+
 export async function getBattalionUsersWithLocations(
     accessToken: string
 ): Promise<UserWithLocation[]> {
@@ -45,6 +50,48 @@ export async function getBattalionUsersWithLocations(
 
         throw new Error(
             data?.detail ?? "Failed to load users"
+        );
+    }
+
+    return response.json();
+}
+
+export type MealBookingResponse = {
+    id: string;
+    user_id: string;
+    book_date: string;
+    lunch: boolean;
+    dinner: boolean;
+};
+
+export async function updateMealBooking(
+    accessToken: string,
+    bookDate: string,
+    request: UpdateMealBookingRequest,
+    username?: string,
+): Promise<MealBookingResponse> {
+    const query = username
+        ? `?username=${encodeURIComponent(username)}`
+        : "";
+
+    const response = await fetch(
+        `${API_URL}/users/bookings/${bookDate}${query}`,
+        {
+            method: "PATCH",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(request),
+        }
+    );
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => null);
+
+        throw new Error(
+            data?.detail ?? "Failed to update meal booking"
         );
     }
 

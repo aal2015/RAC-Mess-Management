@@ -23,6 +23,11 @@ import {
 import { useAuth } from "@/auth/AuthContext";
 import { getCurrentBrowserLocation } from "@/utils/location";
 import ActiveDeliveryMap from "@/components/ActiveDeliveryMap";
+import {
+    isDelivered, formatDistance, formatDuration,
+    getDeliveredCount, getGroupDeliveryStatus, isGroupDelivered,
+    groupBookingsByLocation, hasValidCoordinates, mapDistancesByLocationId
+} from "@/utils/deliveryUtils";
 
 type MealType = "lunch" | "dinner";
 
@@ -31,7 +36,7 @@ type BookingWithDistance = DeliveryUserResponse & {
     durationSeconds: number | null;
 };
 
-type DeliveryGroup = {
+export type DeliveryGroup = {
     locationId: string;
     location: NonNullable<DeliveryUserResponse["location"]>;
     bookings: DeliveryUserResponse[];
@@ -227,31 +232,10 @@ export default function ActiveDelivery() {
     const [distanceError, setDistanceError] =
         useState<string | null>(null);
 
-    const groupedBookings = useMemo<DeliveryGroup[]>(() => {
-        const groups = new Map<string, DeliveryGroup>();
-
-        bookings.forEach((booking) => {
-            const location = booking.location;
-
-            if (!location?.id) return;
-
-            const locationId = String(location.id);
-
-            const existingGroup = groups.get(locationId);
-
-            if (existingGroup) {
-                existingGroup.bookings.push(booking);
-            } else {
-                groups.set(locationId, {
-                    locationId,
-                    location,
-                    bookings: [booking],
-                });
-            }
-        });
-
-        return Array.from(groups.values());
-    }, [bookings]);
+    const groupedBookings = useMemo(
+        () => groupBookingsByLocation(bookings),
+        [bookings]
+    );
 
     useEffect(() => {
         let cancelled = false;
@@ -443,19 +427,9 @@ export default function ActiveDelivery() {
                 return;
             }
 
-            const validGroups = groupedBookings.filter((group) => {
-                const latitude = Number(group.location.latitude);
-                const longitude = Number(group.location.longitude);
-
-                return (
-                    Number.isFinite(latitude) &&
-                    Number.isFinite(longitude) &&
-                    latitude >= -90 &&
-                    latitude <= 90 &&
-                    longitude >= -180 &&
-                    longitude <= 180
-                );
-            });
+            const validGroups = groupedBookings.filter((group) =>
+                hasValidCoordinates(group.location)
+            );
 
             if (validGroups.length === 0) {
                 setDistancesByLocationId({});
@@ -481,15 +455,7 @@ export default function ActiveDelivery() {
 
                 if (cancelled) return;
 
-                const result: Record<string, {
-                    distanceMeters: number;
-                    durationSeconds: number;
-                }> = {};
-
-                validGroups.forEach((group, index) => {
-                    result[group.locationId] = distances[index];
-                });
-
+                const result = mapDistancesByLocationId(validGroups, distances);
                 setDistancesByLocationId(result);
 
             } catch (error) {
@@ -515,20 +481,11 @@ export default function ActiveDelivery() {
     }, [driverLocation, groupedBookings]);
 
     // 4. Delivery status for the selected meal.
-    function isDelivered(booking: DeliveryUserResponse) {
-        if (!selectedMeal) return false;
-
-        return selectedMeal === "lunch"
-            ? booking.lunch_delivered
-            : booking.dinner_delivered;
-    }
-
-    function isGroupDelivered(group: DeliveryGroup) {
-        return group.bookings.every(isDelivered);
-    }
 
     // 5. Sort pending deliveries nearest-first; completed deliveries last.
     const sortedGroups = useMemo(() => {
+        if (!selectedMeal) return [];
+
         return groupedBookings
             .map((group) => {
                 const distance = distancesByLocationId[group.locationId];
@@ -540,17 +497,17 @@ export default function ActiveDelivery() {
                 };
             })
             .sort((a, b) => {
-                const aDelivered = isGroupDelivered(a);
-                const bDelivered = isGroupDelivered(b);
+                const aDelivered = isGroupDelivered(a, selectedMeal);
+                const bDelivered = isGroupDelivered(b, selectedMeal);
 
                 if (aDelivered !== bDelivered) {
                     return aDelivered ? 1 : -1;
                 }
 
-                const aDistance = a.distanceMeters ?? Infinity;
-                const bDistance = b.distanceMeters ?? Infinity;
-
-                return aDistance - bDistance;
+                return (
+                    (a.distanceMeters ?? Infinity) -
+                    (b.distanceMeters ?? Infinity)
+                );
             });
     }, [groupedBookings, distancesByLocationId, selectedMeal]);
 
@@ -560,11 +517,18 @@ export default function ActiveDelivery() {
 
     const activeGroup =
         selectedGroup ??
-        sortedGroups.find((group) => !isGroupDelivered(group)) ??
+        (selectedMeal
+            ? sortedGroups.find(
+                (group) => !isGroupDelivered(group, selectedMeal)
+            )
+            : undefined) ??
         sortedGroups[0] ??
         null;
 
-    const deliveredCount = bookings.filter(isDelivered).length;
+    const deliveredCount = selectedMeal
+        ? getDeliveredCount(bookings, selectedMeal)
+        : 0;
+
     const pendingCount = bookings.length - deliveredCount;
 
     // Local-only update for now.
@@ -583,34 +547,6 @@ export default function ActiveDelivery() {
                     : booking
             )
         );
-    }
-
-    function formatDistance(meters: number | null) {
-        if (meters == null || !Number.isFinite(meters)) {
-            return "Distance unavailable";
-        }
-
-        return meters < 1000
-            ? `${Math.round(meters)} m`
-            : `${(meters / 1000).toFixed(1)} km`;
-    }
-
-    function formatDuration(seconds: number | null) {
-        if (seconds == null || !Number.isFinite(seconds)) {
-            return "";
-        }
-
-        const minutes = Math.round(seconds / 60);
-
-        if (minutes < 1) return "Under 1 min";
-        if (minutes < 60) return `${minutes} min`;
-
-        const hours = Math.floor(minutes / 60);
-        const remaining = minutes % 60;
-
-        return remaining
-            ? `${hours} hr ${remaining} min`
-            : `${hours} hr`;
     }
 
     if (!bookDate || !selectedMeal) {
@@ -797,7 +733,7 @@ export default function ActiveDelivery() {
                                 {booking.name || booking.username}
                             </Text>
 
-                            {isDelivered(booking) ? (
+                            {isDelivered(booking, selectedMeal) ? (
                                 <Text style={{ color: "#16A34A" }}>
                                     Delivered
                                 </Text>
@@ -839,11 +775,19 @@ export default function ActiveDelivery() {
             ) : null}
 
             {sortedGroups.map((group, index) => {
-                const delivered = isGroupDelivered(group);
+                const delivered = selectedMeal
+                    ? isGroupDelivered(group, selectedMeal)
+                    : false;
                 const selected = activeGroup?.locationId === group.locationId;
 
-                const deliveredUsers = group.bookings.filter(isDelivered).length;
+                const deliveredUsers = selectedMeal
+                    ? getDeliveredCount(group.bookings, selectedMeal)
+                    : 0;
                 const totalUsers = group.bookings.length;
+
+                const status = selectedMeal
+                    ? getGroupDeliveryStatus(group, selectedMeal)
+                    : "Pending";
 
                 return (
                     <Pressable
