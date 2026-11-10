@@ -4,12 +4,10 @@ import {
     ActivityIndicator,
     View,
     Text,
-    FlatList,
     Pressable,
     StyleSheet,
     ScrollView
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import {
     getMyRouteBookings,
     getBookingDistances,
@@ -26,7 +24,8 @@ import ActiveDeliveryMap from "@/components/ActiveDeliveryMap";
 import {
     isDelivered, formatDistance, formatDuration,
     getDeliveredCount, getGroupDeliveryStatus, isGroupDelivered,
-    groupBookingsByLocation, hasValidCoordinates, mapDistancesByLocationId
+    groupBookingsByLocation, hasValidCoordinates, mapDistancesByLocationId,
+    getFirstParam, getValidRestoredSession
 } from "@/utils/deliveryUtils";
 
 type MealType = "lunch" | "dinner";
@@ -61,65 +60,29 @@ export default function ActiveDelivery() {
     }>();
 
     // Normalize Expo Router parameters.
-    const bookDate = Array.isArray(params.bookDate)
-        ? params.bookDate[0]
-        : params.bookDate;
-
-    const rawMeal = Array.isArray(params.meal)
-        ? params.meal[0]
-        : params.meal;
+    const bookDate = getFirstParam(params.bookDate);
+    const rawMeal = getFirstParam(params.meal);
+    const sessionId = getFirstParam(params.sessionId);
+    const rawSession = getFirstParam(params.session);
+    const routeNumber = getFirstParam(params.routeNumber);
+    const routeUserCount = getFirstParam(params.routeUserCount);
+    const userCount = getFirstParam(params.userCount);
+    const lunchCount = getFirstParam(params.lunchCount);
+    const dinnerCount = getFirstParam(params.dinnerCount);
 
     const selectedMeal: MealType | null =
         rawMeal === "lunch" || rawMeal === "dinner"
             ? rawMeal
             : null;
 
-    const routeNumber = Array.isArray(params.routeNumber)
-        ? params.routeNumber[0]
-        : params.routeNumber;
-
-    const routeUserCount = Array.isArray(params.routeUserCount)
-        ? params.routeUserCount[0]
-        : params.routeUserCount;
-
-    const userCount = Array.isArray(params.userCount)
-        ? params.userCount[0]
-        : params.userCount;
-
-    const lunchCount = Array.isArray(params.lunchCount)
-        ? params.lunchCount[0]
-        : params.lunchCount;
-
-    const dinnerCount = Array.isArray(params.dinnerCount)
-        ? params.dinnerCount[0]
-        : params.dinnerCount;
-
-    const sessionId = Array.isArray(params.sessionId)
-        ? params.sessionId[0]
-        : params.sessionId;
-
-    const rawSession = Array.isArray(params.session)
-        ? params.session[0]
-        : params.session;
-
-    const restoredSession: TrackingSession | null = (() => {
-        if (!rawSession) return null;
-
-        try {
-            return JSON.parse(rawSession) as TrackingSession;
-        } catch {
-            return null;
-        }
-    })();
-
-    const isRestoredSessionValid = Boolean(
-        restoredSession &&
-        restoredSession.id === sessionId &&
-        restoredSession.is_active &&
-        restoredSession.book_date === bookDate &&
-        restoredSession.meal_type === selectedMeal
+    const restoredSession = getValidRestoredSession(
+        rawSession,
+        sessionId,
+        bookDate,
+        selectedMeal
     );
-
+    const isRestoredSessionValid = restoredSession !== null;
+    
     const [trackingSession, setTrackingSession] =
         useState<TrackingSession | null>(
             isRestoredSessionValid ? restoredSession : null
@@ -195,9 +158,7 @@ export default function ActiveDelivery() {
 
     const { accessToken } = useAuth();
 
-    const [bookings, setBookings] =
-        useState<DeliveryUserResponse[]>([]);
-
+    const [bookings, setBookings] = useState<DeliveryUserResponse[]>([]);
     const [driverLocation, setDriverLocation] = useState(() =>
         isRestoredSessionValid && restoredSession
             ? {
@@ -223,14 +184,9 @@ export default function ActiveDelivery() {
     const [locationLoading, setLocationLoading] = useState(true);
     const [distanceLoading, setDistanceLoading] = useState(false);
 
-    const [bookingsError, setBookingsError] =
-        useState<string | null>(null);
-
-    const [locationError, setLocationError] =
-        useState<string | null>(null);
-
-    const [distanceError, setDistanceError] =
-        useState<string | null>(null);
+    const [bookingsError, setBookingsError] = useState<string | null>(null);
+    const [locationError, setLocationError] = useState<string | null>(null);
+    const [distanceError, setDistanceError] = useState<string | null>(null);
 
     const groupedBookings = useMemo(
         () => groupBookingsByLocation(bookings),

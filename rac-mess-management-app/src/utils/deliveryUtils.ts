@@ -1,7 +1,7 @@
 import type {
     DeliveryUserResponse,} from "@/api/routes";
 import type { DeliveryGroup } from "@/app/(authenticated)/driver/active-delivery"; 
-import type { MealType } from "@/api/tracking";
+import type { MealType, TrackingSession } from "@/api/tracking";
 
 
 export function isDelivered(
@@ -173,4 +173,38 @@ export function mapDistancesByLocationId(
     });
 
     return result;
+}
+
+export function getFirstParam(
+    value: string | string[] | undefined
+): string | undefined {
+    return Array.isArray(value) ? value[0] : value;
+}
+
+export function getValidRestoredSession(
+    rawSession: string | undefined,
+    sessionId: string | undefined,
+    bookDate: string | undefined,
+    meal: MealType | null
+): TrackingSession | null {
+    if (!rawSession || !sessionId || !bookDate || !meal) {
+        return null;
+    }
+
+    try {
+        const session = JSON.parse(rawSession) as TrackingSession;
+
+        if (
+            session.id !== sessionId ||
+            !session.is_active ||
+            session.book_date !== bookDate ||
+            session.meal_type !== meal
+        ) {
+            return null;
+        }
+
+        return session;
+    } catch {
+        return null;
+    }
 }
