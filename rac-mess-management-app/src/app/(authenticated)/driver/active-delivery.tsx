@@ -17,6 +17,7 @@ import {
 } from "@/api/routes";
 import {
     getActiveTrackingSession,
+    updateTrackingTarget,
     type TrackingSession,
 } from "@/api/tracking";
 import { useAuth } from "@/auth/AuthContext";
@@ -37,6 +38,9 @@ type DeliveryGroup = {
 };
 
 export default function ActiveDelivery() {
+    const [targetUpdating, setTargetUpdating] = useState(false);
+    const [targetUpdateError, setTargetUpdateError] = useState<string | null>(null);
+
     const router = useRouter();
 
     const params = useLocalSearchParams<{
@@ -151,6 +155,38 @@ export default function ActiveDelivery() {
             </View>
         );
     }
+
+    const handleSelectDestination = async (locationId: string) => {
+        if (!accessToken || !trackingSession) {
+            setTargetUpdateError("Tracking session is unavailable.");
+            return;
+        }
+
+        setTargetUpdating(true);
+        setTargetUpdateError(null);
+
+        try {
+            await updateTrackingTarget(
+                accessToken,
+                trackingSession.id,
+                {
+                    location_id: locationId,
+                }
+            );
+
+            // Update the selected destination after backend success.
+            setSelectedLocationId(locationId);
+
+        } catch (error) {
+            setTargetUpdateError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to update delivery destination."
+            );
+        } finally {
+            setTargetUpdating(false);
+        }
+    };
 
     const { accessToken } = useAuth();
 
@@ -789,6 +825,19 @@ export default function ActiveDelivery() {
                 Select a destination
             </Text>
 
+            {targetUpdating ? (
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                    <ActivityIndicator />
+                    <Text>Updating delivery destination…</Text>
+                </View>
+            ) : null}
+
+            {targetUpdateError ? (
+                <Text style={{ color: "#DC2626" }}>
+                    {targetUpdateError}
+                </Text>
+            ) : null}
+
             {sortedGroups.map((group, index) => {
                 const delivered = isGroupDelivered(group);
                 const selected = activeGroup?.locationId === group.locationId;
@@ -799,7 +848,8 @@ export default function ActiveDelivery() {
                 return (
                     <Pressable
                         key={group.locationId}
-                        onPress={() => setSelectedLocationId(group.locationId)}
+                        onPress={() => handleSelectDestination(group.locationId)}
+                        disabled={targetUpdating}
                         style={{
                             padding: 12,
                             borderRadius: 10,
