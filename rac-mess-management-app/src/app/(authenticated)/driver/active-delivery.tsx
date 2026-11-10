@@ -1,4 +1,3 @@
-
 import { useMemo, useState, useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -29,6 +28,12 @@ type MealType = "lunch" | "dinner";
 type BookingWithDistance = DeliveryUserResponse & {
     distanceMeters: number | null;
     durationSeconds: number | null;
+};
+
+type DeliveryGroup = {
+    locationId: string;
+    location: NonNullable<DeliveryUserResponse["location"]>;
+    bookings: DeliveryUserResponse[];
 };
 
 export default function ActiveDelivery() {
@@ -164,13 +169,13 @@ export default function ActiveDelivery() {
     const [usingLastKnownLocation, setUsingLastKnownLocation] =
         useState(isRestoredSessionValid);
 
-    const [distancesByBookingId, setDistancesByBookingId] =
+    const [distancesByLocationId, setDistancesByLocationId] =
         useState<Record<string, {
             distanceMeters: number;
             durationSeconds: number;
         }>>({});
 
-    const [selectedBookingId, setSelectedBookingId] =
+    const [selectedLocationId, setSelectedLocationId] =
         useState<string | null>(null);
 
     const [bookingsLoading, setBookingsLoading] = useState(false);
@@ -185,6 +190,32 @@ export default function ActiveDelivery() {
 
     const [distanceError, setDistanceError] =
         useState<string | null>(null);
+
+    const groupedBookings = useMemo<DeliveryGroup[]>(() => {
+        const groups = new Map<string, DeliveryGroup>();
+
+        bookings.forEach((booking) => {
+            const location = booking.location;
+
+            if (!location?.id) return;
+
+            const locationId = String(location.id);
+
+            const existingGroup = groups.get(locationId);
+
+            if (existingGroup) {
+                existingGroup.bookings.push(booking);
+            } else {
+                groups.set(locationId, {
+                    locationId,
+                    location,
+                    bookings: [booking],
+                });
+            }
+        });
+
+        return Array.from(groups.values());
+    }, [bookings]);
 
     useEffect(() => {
         let cancelled = false;
@@ -329,8 +360,8 @@ export default function ActiveDelivery() {
             setBookingsLoading(true);
             setBookingsError(null);
             setDistanceError(null);
-            setDistancesByBookingId({});
-            setSelectedBookingId(null);
+            setDistancesByLocationId({});
+            setSelectedLocationId(null);
 
             try {
                 const data = await getMyRouteBookings(
@@ -365,23 +396,22 @@ export default function ActiveDelivery() {
         };
     }, [accessToken, bookDate, selectedMeal]);
 
-    // 3. Calculate driving distances using LocationIQ Matrix.
+    // 3. Calculate driving distances for unique locations.
     useEffect(() => {
         let cancelled = false;
 
         async function calculateDistances() {
-            if (!driverLocation || bookings.length === 0) {
-                setDistancesByBookingId({});
+            if (!driverLocation || groupedBookings.length === 0) {
+                setDistancesByLocationId({});
                 setDistanceLoading(false);
                 return;
             }
 
-            const validBookings = bookings.filter((booking) => {
-                const latitude = Number(booking.location?.latitude);
-                const longitude = Number(booking.location?.longitude);
+            const validGroups = groupedBookings.filter((group) => {
+                const latitude = Number(group.location.latitude);
+                const longitude = Number(group.location.longitude);
 
                 return (
-                    booking.location != null &&
                     Number.isFinite(latitude) &&
                     Number.isFinite(longitude) &&
                     latitude >= -90 &&
@@ -391,24 +421,25 @@ export default function ActiveDelivery() {
                 );
             });
 
-            if (validBookings.length === 0) {
-                setDistancesByBookingId({});
+            if (validGroups.length === 0) {
+                setDistancesByLocationId({});
                 setDistanceError(
-                    "No valid destination coordinates are available.",
+                    "No valid destination coordinates are available."
                 );
+                setDistanceLoading(false);
                 return;
             }
 
             setDistanceLoading(true);
             setDistanceError(null);
-            setDistancesByBookingId({});
+            setDistancesByLocationId({});
 
             try {
                 const distances = await getBookingDistances(
                     driverLocation,
-                    validBookings.map((booking) => ({
-                        latitude: Number(booking.location.latitude),
-                        longitude: Number(booking.location.longitude),
+                    validGroups.map((group) => ({
+                        latitude: Number(group.location.latitude),
+                        longitude: Number(group.location.longitude),
                     })),
                 );
 
@@ -419,17 +450,18 @@ export default function ActiveDelivery() {
                     durationSeconds: number;
                 }> = {};
 
-                validBookings.forEach((booking, index) => {
-                    result[booking.id] = distances[index];
+                validGroups.forEach((group, index) => {
+                    result[group.locationId] = distances[index];
                 });
 
-                setDistancesByBookingId(result);
+                setDistancesByLocationId(result);
+
             } catch (error) {
                 if (!cancelled) {
                     setDistanceError(
                         error instanceof Error
                             ? error.message
-                            : "Failed to calculate driving distances.",
+                            : "Failed to calculate driving distances."
                     );
                 }
             } finally {
@@ -444,7 +476,7 @@ export default function ActiveDelivery() {
         return () => {
             cancelled = true;
         };
-    }, [driverLocation, bookings]);
+    }, [driverLocation, groupedBookings]);
 
     // 4. Delivery status for the selected meal.
     function isDelivered(booking: DeliveryUserResponse) {
@@ -455,21 +487,25 @@ export default function ActiveDelivery() {
             : booking.dinner_delivered;
     }
 
+    function isGroupDelivered(group: DeliveryGroup) {
+        return group.bookings.every(isDelivered);
+    }
+
     // 5. Sort pending deliveries nearest-first; completed deliveries last.
-    const sortedBookings = useMemo<BookingWithDistance[]>(() => {
-        return bookings
-            .map((booking) => {
-                const distance = distancesByBookingId[booking.id];
+    const sortedGroups = useMemo(() => {
+        return groupedBookings
+            .map((group) => {
+                const distance = distancesByLocationId[group.locationId];
 
                 return {
-                    ...booking,
+                    ...group,
                     distanceMeters: distance?.distanceMeters ?? null,
                     durationSeconds: distance?.durationSeconds ?? null,
                 };
             })
             .sort((a, b) => {
-                const aDelivered = isDelivered(a);
-                const bDelivered = isDelivered(b);
+                const aDelivered = isGroupDelivered(a);
+                const bDelivered = isGroupDelivered(b);
 
                 if (aDelivered !== bDelivered) {
                     return aDelivered ? 1 : -1;
@@ -480,30 +516,24 @@ export default function ActiveDelivery() {
 
                 return aDistance - bDistance;
             });
-    }, [bookings, distancesByBookingId, selectedMeal]);
+    }, [groupedBookings, distancesByLocationId, selectedMeal]);
+
+    const selectedGroup = sortedGroups.find(
+        (group) => group.locationId === selectedLocationId
+    );
+
+    const activeGroup =
+        selectedGroup ??
+        sortedGroups.find((group) => !isGroupDelivered(group)) ??
+        sortedGroups[0] ??
+        null;
 
     const deliveredCount = bookings.filter(isDelivered).length;
     const pendingCount = bookings.length - deliveredCount;
 
-    const selectedBooking = sortedBookings.find(
-        (booking) => booking.id === selectedBookingId,
-    );
-
-    const activeBooking =
-        selectedBooking ??
-        sortedBookings.find((booking) => !isDelivered(booking)) ??
-        sortedBookings[0] ??
-        null;
-
-    const nextBooking = activeBooking;
-
     // Local-only update for now.
-    function markDelivered() {
-        if (!activeBooking || isDelivered(activeBooking) || !selectedMeal) {
-            return;
-        }
-
-        const bookingId = activeBooking.id;
+    function markDelivered(bookingId: string) {
+        if (!selectedMeal) return;
 
         setBookings((current) =>
             current.map((booking) =>
@@ -514,8 +544,8 @@ export default function ActiveDelivery() {
                             ? { lunch_delivered: true }
                             : { dinner_delivered: true }),
                     }
-                    : booking,
-            ),
+                    : booking
+            )
         );
     }
 
@@ -631,17 +661,15 @@ export default function ActiveDelivery() {
             </View> */}
             <ActiveDeliveryMap
                 driverLocation={driverLocation}
-                locations={bookings
-                    .filter((booking) => booking.location)
-                    .map((booking) => ({
-                        id: booking.id,
-                        name: booking.name,
-                        username: booking.username,
-                        latitude: booking.location.latitude,
-                        longitude: booking.location.longitude,
-                        road_name: booking.location.road_name,
-                    }))}
-                selectedLocationId={nextBooking?.id ?? null}
+                locations={groupedBookings.map((group) => ({
+                    id: group.locationId,
+                    name: group.location.road_name || "Unnamed location",
+                    username: `${group.bookings.length} users`,
+                    latitude: group.location.latitude,
+                    longitude: group.location.longitude,
+                    road_name: group.location.road_name,
+                }))}
+                selectedLocationId={activeGroup?.locationId ?? null}
             />
 
             {locationLoading ? (
@@ -690,54 +718,70 @@ export default function ActiveDelivery() {
                 </Text>
             ) : null}
 
-            {activeBooking ? (
+            {activeGroup ? (
                 <View
                     style={{
                         padding: 14,
                         borderRadius: 10,
                         borderWidth: 1,
                         borderColor: "#2563EB",
-                        gap: 8,
+                        gap: 10,
                     }}
                 >
                     <Text style={{ fontSize: 18, fontWeight: "700" }}>
                         Selected destination
                     </Text>
 
-                    <Text>
-                        {activeBooking.name || activeBooking.username}
+                    <Text style={{ fontWeight: "600" }}>
+                        {activeGroup.location.road_name || "Unnamed location"}
                     </Text>
 
                     <Text>
-                        {activeBooking.location?.road_name ||
-                            "Road name unavailable"}
+                        {activeGroup.bookings.length} users
                     </Text>
 
                     <Text>
-                        {formatDistance(activeBooking.distanceMeters)}
-                        {activeBooking.durationSeconds != null &&
-                            Number.isFinite(activeBooking.durationSeconds)
-                            ? ` · ${formatDuration(activeBooking.durationSeconds)}`
+                        {formatDistance(activeGroup.distanceMeters)}
+                        {activeGroup.durationSeconds != null
+                            ? ` · ${formatDuration(activeGroup.durationSeconds)}`
                             : ""}
                     </Text>
 
-                    {isDelivered(activeBooking) ? (
-                        <Text>Already delivered</Text>
-                    ) : (
-                        <Pressable
-                            onPress={markDelivered}
+                    {activeGroup.bookings.map((booking) => (
+                        <View
+                            key={booking.id}
                             style={{
-                                padding: 12,
-                                borderRadius: 8,
-                                backgroundColor: "#2563EB",
+                                flexDirection: "row",
+                                justifyContent: "space-between",
                                 alignItems: "center",
+                                paddingVertical: 6,
                             }}
                         >
-                            <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                                Mark Delivered (local only)
+                            <Text>
+                                {booking.name || booking.username}
                             </Text>
-                        </Pressable>
-                    )}
+
+                            {isDelivered(booking) ? (
+                                <Text style={{ color: "#16A34A" }}>
+                                    Delivered
+                                </Text>
+                            ) : (
+                                <Pressable
+                                    onPress={() => markDelivered(booking.id)}
+                                    style={{
+                                        backgroundColor: "#2563EB",
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 8,
+                                        borderRadius: 8,
+                                    }}
+                                >
+                                    <Text style={{ color: "#FFFFFF" }}>
+                                        Mark Delivered
+                                    </Text>
+                                </Pressable>
+                            )}
+                        </View>
+                    ))}
                 </View>
             ) : null}
 
@@ -745,25 +789,24 @@ export default function ActiveDelivery() {
                 Select a destination
             </Text>
 
-            {sortedBookings.map((booking, index) => {
-                const delivered = isDelivered(booking);
-                const selected = activeBooking?.id === booking.id;
+            {sortedGroups.map((group, index) => {
+                const delivered = isGroupDelivered(group);
+                const selected = activeGroup?.locationId === group.locationId;
+
+                const deliveredUsers = group.bookings.filter(isDelivered).length;
+                const totalUsers = group.bookings.length;
 
                 return (
                     <Pressable
-                        key={booking.id}
-                        onPress={() => setSelectedBookingId(booking.id)}
+                        key={group.locationId}
+                        onPress={() => setSelectedLocationId(group.locationId)}
                         style={{
                             padding: 12,
                             borderRadius: 10,
                             borderWidth: 1,
                             borderColor: selected ? "#2563EB" : "#E5E7EB",
-                            backgroundColor: selected
-                                ? "#EFF6FF"
-                                : delivered
-                                    ? "#F3F4F6"
-                                    : "#FFFFFF",
-                            gap: 5,
+                            backgroundColor: selected ? "#EFF6FF" : "#FFFFFF",
+                            gap: 6,
                         }}
                     >
                         <View
@@ -774,28 +817,31 @@ export default function ActiveDelivery() {
                             }}
                         >
                             <Text style={{ fontWeight: "700", flexShrink: 1 }}>
-                                {index + 1}. {booking.name || booking.username}
+                                {index + 1}. {group.location.road_name || "Unnamed location"}
                             </Text>
 
                             <Text
                                 style={{
-                                    color: delivered ? "#6B7280" : "#166534",
+                                    color: delivered ? "#16A34A" : "#166534",
                                     fontWeight: "600",
                                 }}
                             >
-                                {delivered ? "Delivered" : "Pending"}
+                                {delivered
+                                    ? "Completed"
+                                    : deliveredUsers > 0
+                                        ? "Partially delivered"
+                                        : "Pending"}
                             </Text>
                         </View>
 
                         <Text>
-                            {booking.location?.road_name || "Road name unavailable"}
+                            {totalUsers} users · {deliveredUsers} delivered
                         </Text>
 
                         <Text>
-                            {formatDistance(booking.distanceMeters)}
-                            {booking.durationSeconds != null &&
-                                Number.isFinite(booking.durationSeconds)
-                                ? ` · ${formatDuration(booking.durationSeconds)}`
+                            {formatDistance(group.distanceMeters)}
+                            {group.durationSeconds != null
+                                ? ` · ${formatDuration(group.durationSeconds)}`
                                 : ""}
                         </Text>
 
