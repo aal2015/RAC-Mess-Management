@@ -64,6 +64,27 @@ export type MealBookingResponse = {
     dinner: boolean;
 };
 
+export async function getMealBooking(
+    accessToken: string,
+    bookDate: string,
+): Promise<MealBookingResponse | null> {
+    const response = await fetch(
+        `${API_URL}/users/bookings/${bookDate}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch meal booking");
+    }
+
+    return response.json();
+}
+
 export async function updateMealBooking(
     accessToken: string,
     bookDate: string,
