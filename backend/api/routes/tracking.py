@@ -110,15 +110,36 @@ def get_active_tracking_session(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    require_driver(current_user)
+    if current_user.role == "driver":
+        query = (
+            db.query(DeliverySession)
+            .join(Route, DeliverySession.route_id == Route.id)
+            .filter(Route.driver_id == current_user.id)
+        )
+
+    elif current_user.role == "user":
+        if not current_user.location_id:
+            raise HTTPException(
+                status_code=400,
+                detail="User is not assigned to a location",
+            )
+
+        query = (
+            db.query(DeliverySession)
+            .join(Route, DeliverySession.route_id == Route.id)
+            .join(RouteLocation, RouteLocation.route_id == Route.id)
+            .filter(RouteLocation.location_id == current_user.location_id)
+        )
+
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to view tracking sessions",
+        )
 
     session = (
-        db.query(DeliverySession)
-        .join(Route, DeliverySession.route_id == Route.id)
-        .filter(
-            Route.driver_id == current_user.id,
-            DeliverySession.is_active.is_(True),
-        )
+        query
+        .filter(DeliverySession.is_active.is_(True))
         .order_by(DeliverySession.started_at.desc())
         .first()
     )
