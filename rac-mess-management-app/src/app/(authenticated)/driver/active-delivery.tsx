@@ -6,7 +6,9 @@ import {
     Text,
     Pressable,
     StyleSheet,
-    ScrollView
+    ScrollView,
+    Alert,
+    Platform
 } from "react-native";
 import {
     getMyRouteBookings,
@@ -17,6 +19,7 @@ import {
     getActiveTrackingSession,
     updateTrackingTarget,
     updateTrackingLocation,
+    stopTrackingSession,
     type TrackingSession,
 } from "@/api/tracking";
 import { useAuth } from "@/auth/AuthContext";
@@ -45,6 +48,9 @@ export type DeliveryGroup = {
 export default function ActiveDelivery() {
     const [targetUpdating, setTargetUpdating] = useState(false);
     const [targetUpdateError, setTargetUpdateError] = useState<string | null>(null);
+
+    const [isEndingDelivery, setIsEndingDelivery] = useState(false);
+    const [endDeliveryError, setEndDeliveryError] = useState<string | null>(null);
 
     const router = useRouter();
     const { accessToken } = useAuth();
@@ -559,6 +565,68 @@ export default function ActiveDelivery() {
         accessToken,
     ]);
 
+    const handleEndDelivery = () => {
+        if (Platform.OS === "web") {
+            const confirmed = window.confirm(
+                "Are you sure you want to end this delivery?"
+            );
+
+            if (confirmed) {
+                confirmEndDelivery();
+            }
+
+            return;
+        }
+
+        Alert.alert(
+            "End Delivery",
+            "Are you sure you want to end this delivery?",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "End Delivery",
+                    style: "destructive",
+                    onPress: confirmEndDelivery,
+                },
+            ]
+        );
+    };
+
+    const confirmEndDelivery = async () => {
+        if (!accessToken || !trackingSession || isEndingDelivery) {
+            return;
+        }
+
+        try {
+            setIsEndingDelivery(true);
+            setEndDeliveryError(null);
+
+            const updatedSession = await stopTrackingSession(
+                accessToken,
+                trackingSession.id
+            );
+
+            // Update local session state.
+            setTrackingSession(updatedSession);
+
+            // Return to the Driver Delivery tab.
+            router.replace("/(authenticated)/delivery");
+
+        } catch (error) {
+            console.error("Failed to end delivery:", error);
+            setEndDeliveryError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to end delivery. Please try again."
+            );
+        } finally {
+            setIsEndingDelivery(false);
+        }
+    };
+
 
     if (!bookDate || !selectedMeal) {
         return (
@@ -886,6 +954,29 @@ export default function ActiveDelivery() {
                 bookings.length === 0 ? (
                 <Text>No bookings found for this meal and date.</Text>
             ) : null}
+
+            <Pressable
+                onPress={handleEndDelivery}
+                disabled={isEndingDelivery}
+                style={{
+                    backgroundColor: "#DC2626",
+                    padding: 16,
+                    borderRadius: 10,
+                    alignItems: "center",
+                    marginTop: 16,
+                    opacity: isEndingDelivery ? 0.6 : 1,
+                }}
+            >
+                <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                    {isEndingDelivery ? "Ending Delivery..." : "End Delivery"}
+                </Text>
+            </Pressable>
+
+            {endDeliveryError && (
+                <Text style={{ color: "red", marginTop: 8 }}>
+                    {endDeliveryError}
+                </Text>
+            )}
         </ScrollView>
     );
 }
