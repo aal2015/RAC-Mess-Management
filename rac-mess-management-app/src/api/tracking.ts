@@ -161,3 +161,30 @@ export async function stopTrackingSession(
 
     return handleResponse<TrackingSession>(response);
 }
+
+export type UserLocation = {
+    id: string;
+    latitude: number;
+    longitude: number;
+    road_name: string | null;
+};
+
+export async function getUserLocation(
+    accessToken: string,
+    username: string
+): Promise<UserLocation> {
+    const response = await fetch(
+        `${API_URL}/users/location/${encodeURIComponent(username)}`,
+        {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch user location");
+    }
+
+    return response.json();
+}

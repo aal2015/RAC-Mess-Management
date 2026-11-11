@@ -226,6 +226,11 @@ export default function AuthenticatedLayout() {
           name="location/add"
           options={{ href: null }}
         />
+
+        <Tabs.Screen
+          name="tracking/user-tracking"
+          options={{ href: null }}
+        />
       </Tabs>
     </View>
   );

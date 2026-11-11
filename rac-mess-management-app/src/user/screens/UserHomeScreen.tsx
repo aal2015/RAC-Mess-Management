@@ -160,7 +160,7 @@ export default function UserHomeScreen() {
     if (!trackingSession) return;
 
     router.push({
-      pathname: "/tracking/[sessionId]",
+      pathname: "/tracking/user-tracking",
       params: {
         sessionId: trackingSession.id,
       },
