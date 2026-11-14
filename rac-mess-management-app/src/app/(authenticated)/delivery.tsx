@@ -16,7 +16,7 @@ import { getCurrentBrowserLocation } from "@/utils/location";
 import DeliveryScreen from "@/user/screens/DeliveryScreen";
 import { MealType } from "@/user/screens/DeliveryScreen";
 import { styles } from "../../user/styles/delivery.styles";
-import LogoutButton from "../../components/LogoutButton";
+import ScreenHeader from "@/components/ScreenHeader";
 
 function getLocalDateString() {
     const now = new Date();
@@ -162,10 +162,7 @@ export default function Delivery() {
             style={styles.container}
             contentContainerStyle={{ flexGrow: 1 }}
         >
-            <View style={styles.header}>
-                <Text style={styles.title}>Delivery</Text>
-                <LogoutButton />
-            </View>
+            <ScreenHeader title="Delivery" />
 
             {error ? (
                 <View style={{ padding: 20, alignItems: "center" }}>

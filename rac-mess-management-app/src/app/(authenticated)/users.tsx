@@ -19,7 +19,7 @@ import type {
   DataTableColumn,
   DataTableAction,
 } from "@/components/DataTable/types";
-import LogoutButton from "../../components/LogoutButton";
+import ScreenHeader from "@/components/ScreenHeader";
 
 import { styles } from "../../user/styles/users.styles";
 
@@ -58,28 +58,28 @@ export default function UsersScreen() {
   const getActions = (
     person: User
   ): DataTableAction<User>[] => [
-    {
-      label: "View Details",
-      onPress: (person) => {
-        router.push({
-          pathname: "./user-detail/[id]",
-          params: { id: person.id },
-        });
+      {
+        label: "View Details",
+        onPress: (person) => {
+          router.push({
+            pathname: "./user-detail/[id]",
+            params: { id: person.id },
+          });
+        },
       },
-    },
-    {
-      label: "Meal Management",
-      onPress: (person) => {
-        router.push({
-          pathname: "/calendar",
-          params: {
-            userId: person.id,
-            username: person.username,
-          },
-        });
+      {
+        label: "Meal Management",
+        onPress: (person) => {
+          router.push({
+            pathname: "/calendar",
+            params: {
+              userId: person.id,
+              username: person.username,
+            },
+          });
+        },
       },
-    },
-  ];
+    ];
 
   const loadUsers = useCallback(async () => {
     if (!accessToken) {
@@ -133,10 +133,7 @@ export default function UsersScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>User Management</Text>
-        <LogoutButton />
-      </View>
+      <ScreenHeader title="User Management" />
 
       <View style={styles.content}>
         <Pressable
@@ -183,7 +180,7 @@ export default function UsersScreen() {
                   style={[
                     styles.pageButton,
                     currentPage === 1 &&
-                      styles.disabledButton,
+                    styles.disabledButton,
                   ]}
                   disabled={currentPage === 1}
                   onPress={() =>
@@ -203,7 +200,7 @@ export default function UsersScreen() {
                   style={[
                     styles.pageButton,
                     currentPage === totalPages &&
-                      styles.disabledButton,
+                    styles.disabledButton,
                   ]}
                   disabled={currentPage === totalPages}
                   onPress={() =>

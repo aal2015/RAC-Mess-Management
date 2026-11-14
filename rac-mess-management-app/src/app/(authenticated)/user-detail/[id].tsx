@@ -14,7 +14,7 @@ import {
 
 import { useEffect, useState } from "react";
 
-import LogoutButton from "../../../components/LogoutButton";
+import ScreenHeader from "@/components/ScreenHeader";
 import UserLocation from "@/components/UserLocation/UserLocation";
 
 import { useAuth } from "../../../auth/AuthContext";
@@ -96,10 +96,7 @@ export default function UserDetailScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>User Details</Text>
-        <LogoutButton />
-      </View>
+      <ScreenHeader title="User Details" />
 
       <View style={styles.content}>
         <View style={styles.card}>

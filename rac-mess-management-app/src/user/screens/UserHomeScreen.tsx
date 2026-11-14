@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 
 import { useAuth } from "../../auth/AuthContext";
-import LogoutButton from "../../components/LogoutButton";
+import ScreenHeader from "@/components/ScreenHeader";
 
 import { getMealBooking, MealBookingResponse } from "../../api/users";
 import { getActiveTrackingSession, type TrackingSession } from "../../api/tracking";
@@ -27,15 +27,6 @@ function getLocalDate() {
   const day = String(now.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
-}
-
-function getGreeting() {
-  const hour = new Date().getHours();
-
-  if (hour >= 5 && hour < 12) return "Good Morning";
-  if (hour >= 12 && hour < 17) return "Good Afternoon";
-
-  return "Good Evening";
 }
 
 function MealCard({
@@ -173,19 +164,11 @@ export default function UserHomeScreen() {
       contentContainerStyle={styles.contentContainer}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.greeting}>
-            {getGreeting()}, {user?.name}
-          </Text>
-
-          <Text style={styles.userInfo}>
-            {user?.username} • {user?.battalion ?? "-"}
-          </Text>
-        </View>
-
-        <LogoutButton />
-      </View>
+      <ScreenHeader
+        name={user?.name}
+        subtitle={`${user?.username ?? "-"} • ${user?.battalion ?? "-"}`}
+        showGreeting
+      />
 
       <View style={styles.content}>
 
