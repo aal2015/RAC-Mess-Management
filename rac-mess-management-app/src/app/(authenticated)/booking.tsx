@@ -273,6 +273,16 @@ export default function BookingScreen() {
         );
     }
 
+    const now = new Date();
+
+    const today = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    const isPastDate = !!date && date < today;
+
     return (
         <ScrollView
             style={styles.container}
@@ -299,6 +309,12 @@ export default function BookingScreen() {
             </View>
 
             <View style={styles.card}>
+                {isPastDate && (
+                    <Text style={styles.errorText}>
+                        Past bookings cannot be modified.
+                    </Text>
+                )}
+
                 <Text style={styles.label}>
                     Lunch
                 </Text>
@@ -308,12 +324,14 @@ export default function BookingScreen() {
                         style={[
                             styles.option,
                             lunch && styles.takingActive,
+                            isPastDate && styles.disabled,
                         ]}
                         onPress={() => {
                             setLunch(true);
                             setSuccess("");
                             setError("");
                         }}
+                        disabled={isPastDate}
                     >
                         <Text
                             style={[
@@ -329,12 +347,14 @@ export default function BookingScreen() {
                         style={[
                             styles.option,
                             !lunch && styles.notTakingActive,
+                            isPastDate && styles.disabled,
                         ]}
                         onPress={() => {
                             setLunch(false);
                             setSuccess("");
                             setError("");
                         }}
+                        disabled={isPastDate}
                     >
                         <Text
                             style={[
@@ -356,17 +376,20 @@ export default function BookingScreen() {
                         style={[
                             styles.option,
                             dinner && styles.takingActive,
+                            isPastDate && styles.disabled,
                         ]}
                         onPress={() => {
                             setDinner(true);
                             setSuccess("");
                             setError("");
                         }}
+                        disabled={isPastDate}
                     >
                         <Text
                             style={[
                                 styles.optionText,
                                 dinner && styles.whiteText,
+                                isPastDate && styles.disabled,
                             ]}
                         >
                             Taking
@@ -377,12 +400,14 @@ export default function BookingScreen() {
                         style={[
                             styles.option,
                             !dinner && styles.notTakingActive,
+                            isPastDate && styles.disabled,
                         ]}
                         onPress={() => {
                             setDinner(false);
                             setSuccess("");
                             setError("");
                         }}
+                        disabled={isPastDate}
                     >
                         <Text
                             style={[
@@ -417,7 +442,6 @@ export default function BookingScreen() {
                         <Pressable
                             style={styles.cancelButton}
                             onPress={goToCalendar}
-                            disabled={isSubmitting}
                         >
                             <Text style={styles.cancelText}>
                                 Cancel
@@ -425,9 +449,9 @@ export default function BookingScreen() {
                         </Pressable>
 
                         <Pressable
-                            style={styles.confirmButton}
+                            style={[styles.confirmButton, isPastDate && styles.disabled]}
                             onPress={handleConfirm}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isPastDate}
                         >
                             <Text style={styles.confirmText}>
                                 {isSubmitting
@@ -438,9 +462,9 @@ export default function BookingScreen() {
 
                         {isAdmin && (
                             <Pressable
-                                style={styles.deleteButton}
+                                style={[styles.deleteButton, isPastDate && styles.disabled]}
                                 onPress={handleDeleteBooking}
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || isPastDate}
                             >
                                 <Text style={styles.deleteButtonText}>
                                     {isSubmitting ? "Deleting..." : "Delete Booking"}
