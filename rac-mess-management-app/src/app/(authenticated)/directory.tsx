@@ -15,10 +15,11 @@ import {
   UnauthorizedError,
   type User,
 } from "../../api/admin";
-import LogoutButton from "../../components/LogoutButton";
 
 import DataTable from "@/components/DataTable/DataTable";
 import type { DataTableColumn } from "@/components/DataTable/types";
+
+import ScreenHeader from "@/components/ScreenHeader";
 
 import { styles } from "../../user/styles/directory.styles";
 
@@ -137,13 +138,7 @@ export default function DirectoryScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          Personal Directory
-        </Text>
-
-        <LogoutButton />
-      </View>
+      <ScreenHeader title="Personal Directory" />
 
       <View style={styles.content}>
         <TextInput
