@@ -85,6 +85,8 @@ export default function ActiveDeliveryMap({
     const mapLoadedRef = useRef(false);
     const renderMapRef = useRef<(() => void) | null>(null);
 
+    const initialCameraSetRef = useRef(false);
+
     const [status, setStatus] = useState("Loading map...");
     const [error, setError] = useState<string | null>(null);
 
@@ -211,19 +213,23 @@ export default function ActiveDeliveryMap({
             return;
         }
 
-        // Zoom to show the driver and all delivery locations.
-        if (pointCount === 1) {
-            map.flyTo({
-                center: bounds.getCenter(),
-                zoom: 16,
-                duration: 800,
-            });
-        } else {
-            map.fitBounds(bounds, {
-                padding: 50,
-                maxZoom: 16,
-                duration: 800,
-            });
+        // Only position the camera on the initial map render.
+        if (!initialCameraSetRef.current) {
+            if (pointCount === 1) {
+                map.flyTo({
+                    center: bounds.getCenter(),
+                    zoom: 16,
+                    duration: 800,
+                });
+            } else {
+                map.fitBounds(bounds, {
+                    padding: 50,
+                    maxZoom: 16,
+                    duration: 800,
+                });
+            }
+
+            initialCameraSetRef.current = true;
         }
 
         setStatus(
@@ -429,6 +435,7 @@ export default function ActiveDeliveryMap({
 
             mapRef.current?.remove();
             mapRef.current = null;
+            initialCameraSetRef.current = false;
         };
     }, []);
 
