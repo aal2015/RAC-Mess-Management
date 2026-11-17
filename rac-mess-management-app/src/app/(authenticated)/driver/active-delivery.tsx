@@ -31,6 +31,7 @@ import {
     groupBookingsByLocation, hasValidCoordinates, mapDistancesByLocationId,
     getFirstParam, getValidRestoredSession
 } from "@/utils/deliveryUtils";
+import ScreenHeader from "@/components/ScreenHeader";
 
 type MealType = "lunch" | "dinner";
 
@@ -51,6 +52,8 @@ export default function ActiveDelivery() {
 
     const [isEndingDelivery, setIsEndingDelivery] = useState(false);
     const [endDeliveryError, setEndDeliveryError] = useState<string | null>(null);
+
+    const [bookingsLoaded, setBookingsLoaded] = useState(false);
 
     const router = useRouter();
     const { accessToken } = useAuth();
@@ -133,6 +136,15 @@ export default function ActiveDelivery() {
 
             // Update the selected destination after backend success.
             setSelectedLocationId(locationId);
+
+            setTrackingSession((current) =>
+                current
+                    ? {
+                        ...current,
+                        target_location_id: locationId,
+                    }
+                    : current
+            );
 
         } catch (error) {
             setTargetUpdateError(
@@ -318,6 +330,7 @@ export default function ActiveDelivery() {
                     "The booking date or meal is missing. Go back and start delivery again.",
                 );
                 setBookingsLoading(false);
+                setBookingsLoaded(true);
                 return;
             }
 
@@ -326,6 +339,8 @@ export default function ActiveDelivery() {
             setDistanceError(null);
             setDistancesByLocationId({});
             setSelectedLocationId(null);
+
+            setBookingsLoaded(false);
 
             try {
                 const data = await getMyRouteBookings(
@@ -349,6 +364,8 @@ export default function ActiveDelivery() {
             } finally {
                 if (!cancelled) {
                     setBookingsLoading(false);
+                    setBookingsLoaded(true);
+
                 }
             }
         }
@@ -459,15 +476,7 @@ export default function ActiveDelivery() {
         (group) => group.locationId === selectedLocationId
     );
 
-    const activeGroup =
-        selectedGroup ??
-        (selectedMeal
-            ? sortedGroups.find(
-                (group) => !isGroupDelivered(group, selectedMeal)
-            )
-            : undefined) ??
-        sortedGroups[0] ??
-        null;
+    const activeGroup = selectedGroup ?? null;
 
     const deliveredCount = selectedMeal
         ? getDeliveredCount(bookings, selectedMeal)
@@ -492,6 +501,38 @@ export default function ActiveDelivery() {
             )
         );
     }
+
+    useEffect(() => {
+        if (
+            !sessionValidated ||
+            !trackingSession ||
+            !bookingsLoaded
+        ) {
+            return;
+        }
+
+        const targetLocationId = trackingSession.target_location_id;
+
+        if (!targetLocationId) {
+            setSelectedLocationId(null);
+            return;
+        }
+
+        const targetExists = groupedBookings.some(
+            (group) => group.locationId === targetLocationId
+        );
+
+        setSelectedLocationId(
+            targetExists ? targetLocationId : null
+        );
+
+    }, [
+        sessionValidated,
+        trackingSession?.target_location_id,
+        bookingsLoaded,
+        groupedBookings,
+    ]);
+
 
     const locationUpdateInProgress = useRef(false);
 
@@ -700,15 +741,20 @@ export default function ActiveDelivery() {
 
     return (
         <ScrollView
-            contentContainerStyle={{ padding: 16, gap: 12 }}
+            style={styles.container}
+            contentContainerStyle={{ flexGrow: 1 }}
+        // contentContainerStyle={{ padding: 16, gap: 12 }}
         >
-            <Pressable onPress={() => router.back()}>
+            <ScreenHeader title="Delivery" />
+            <View style={{ padding: 16, gap: 12 }}>
+
+                {/* <Pressable onPress={() => router.back()}>
                 <Text style={{ color: "#2563EB" }}>
                     ← Back to Delivery
                 </Text>
-            </Pressable>
+            </Pressable> */}
 
-            <Text style={{ fontSize: 24, fontWeight: "700" }}>
+                {/* <Text style={{ fontSize: 24, fontWeight: "700" }}>
                 Active Delivery · Route {routeNumber || "—"}
             </Text>
 
@@ -718,10 +764,10 @@ export default function ActiveDelivery() {
 
             <Text>
                 Route users: {routeUserCount ?? "—"} · Total users: {userCount ?? "—"}
-            </Text>
+            </Text> */}
 
-            {/* Map placeholder for future Directions API integration. */}
-            {/* <View
+                {/* Map placeholder for future Directions API integration. */}
+                {/* <View
                 style={{
                     minHeight: 260,
                     borderRadius: 12,
@@ -732,511 +778,260 @@ export default function ActiveDelivery() {
             >
                 <Text>Map will go here</Text>
             </View> */}
-            <ActiveDeliveryMap
-                driverLocation={driverLocation}
-                locations={groupedBookings.map((group) => ({
-                    id: group.locationId,
-                    name: group.location.road_name || "Unnamed location",
-                    username: `${group.bookings.length} users`,
-                    latitude: group.location.latitude,
-                    longitude: group.location.longitude,
-                    road_name: group.location.road_name,
-                }))}
-                selectedLocationId={activeGroup?.locationId ?? null}
-            />
+                <ActiveDeliveryMap
+                    driverLocation={driverLocation}
+                    locations={groupedBookings.map((group) => ({
+                        id: group.locationId,
+                        name: group.location.road_name || "Unnamed location",
+                        username: `${group.bookings.length} users`,
+                        latitude: group.location.latitude,
+                        longitude: group.location.longitude,
+                        road_name: group.location.road_name,
+                    }))}
+                    selectedLocationId={activeGroup?.locationId ?? null}
+                />
 
-            {locationLoading ? (
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                    <ActivityIndicator />
-                    <Text>Getting your location…</Text>
-                </View>
-            ) : locationError ? (
-                <Text style={{ color: "#DC2626" }}>
-                    {locationError}
-                </Text>
-            ) : (
-                <Text style={{ color: "#166534" }}>
-                    Driver location acquired.
-                </Text>
-            )}
-
-            <Text>
-                Bookings: {bookings.length} · Pending: {pendingCount} ·
-                Delivered: {deliveredCount}
-            </Text>
-
-            {bookingsLoading ? (
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                    <ActivityIndicator />
-                    <Text>Loading bookings…</Text>
-                </View>
-            ) : null}
-
-            {bookingsError ? (
-                <Text style={{ color: "#DC2626" }}>
-                    {bookingsError}
-                </Text>
-            ) : null}
-
-            {distanceLoading ? (
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                    <ActivityIndicator />
-                    <Text>Calculating driving distances…</Text>
-                </View>
-            ) : null}
-
-            {distanceError ? (
-                <Text style={{ color: "#B45309" }}>
-                    Distances unavailable: {distanceError}
-                </Text>
-            ) : null}
-
-            {activeGroup ? (
-                <View
-                    style={{
-                        padding: 14,
-                        borderRadius: 10,
-                        borderWidth: 1,
-                        borderColor: "#2563EB",
-                        gap: 10,
-                    }}
-                >
-                    <Text style={{ fontSize: 18, fontWeight: "700" }}>
-                        Selected destination
+                {locationLoading ? (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                        <ActivityIndicator />
+                        <Text>Getting your location…</Text>
+                    </View>
+                ) : locationError ? (
+                    <Text style={{ color: "#DC2626" }}>
+                        {locationError}
                     </Text>
-
-                    <Text style={{ fontWeight: "600" }}>
-                        {activeGroup.location.road_name || "Unnamed location"}
+                ) : (
+                    <Text style={{ color: "#166534" }}>
+                        Driver location acquired.
                     </Text>
+                )}
 
-                    <Text>
-                        {activeGroup.bookings.length} users
-                    </Text>
-
-                    <Text>
-                        {formatDistance(activeGroup.distanceMeters)}
-                        {activeGroup.durationSeconds != null
-                            ? ` · ${formatDuration(activeGroup.durationSeconds)}`
-                            : ""}
-                    </Text>
-
-                    {activeGroup.bookings.map((booking) => (
-                        <View
-                            key={booking.id}
-                            style={{
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                paddingVertical: 6,
-                            }}
-                        >
-                            <Text>
-                                {booking.name || booking.username}
-                            </Text>
-
-                            {isDelivered(booking, selectedMeal) ? (
-                                <Text style={{ color: "#16A34A" }}>
-                                    Delivered
-                                </Text>
-                            ) : (
-                                <Pressable
-                                    onPress={() => markDelivered(booking.id)}
-                                    style={{
-                                        backgroundColor: "#2563EB",
-                                        paddingHorizontal: 12,
-                                        paddingVertical: 8,
-                                        borderRadius: 8,
-                                    }}
-                                >
-                                    <Text style={{ color: "#FFFFFF" }}>
-                                        Mark Delivered
-                                    </Text>
-                                </Pressable>
-                            )}
-                        </View>
-                    ))}
-                </View>
-            ) : null}
-
-            <Text style={{ fontSize: 18, fontWeight: "700" }}>
-                Select a destination
-            </Text>
-
-            {targetUpdating ? (
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                    <ActivityIndicator />
-                    <Text>Updating delivery destination…</Text>
-                </View>
-            ) : null}
-
-            {targetUpdateError ? (
-                <Text style={{ color: "#DC2626" }}>
-                    {targetUpdateError}
+                <Text>
+                    Bookings: {bookings.length} · Pending: {pendingCount} ·
+                    Delivered: {deliveredCount}
                 </Text>
-            ) : null}
 
-            {sortedGroups.map((group, index) => {
-                const delivered = selectedMeal
-                    ? isGroupDelivered(group, selectedMeal)
-                    : false;
-                const selected = activeGroup?.locationId === group.locationId;
+                {bookingsLoading ? (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                        <ActivityIndicator />
+                        <Text>Loading bookings…</Text>
+                    </View>
+                ) : null}
 
-                const deliveredUsers = selectedMeal
-                    ? getDeliveredCount(group.bookings, selectedMeal)
-                    : 0;
-                const totalUsers = group.bookings.length;
+                {bookingsError ? (
+                    <Text style={{ color: "#DC2626" }}>
+                        {bookingsError}
+                    </Text>
+                ) : null}
 
-                const status = selectedMeal
-                    ? getGroupDeliveryStatus(group, selectedMeal)
-                    : "Pending";
+                {distanceLoading ? (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                        <ActivityIndicator />
+                        <Text>Calculating driving distances…</Text>
+                    </View>
+                ) : null}
 
-                return (
-                    <Pressable
-                        key={group.locationId}
-                        onPress={() => handleSelectDestination(group.locationId)}
-                        disabled={targetUpdating}
+                {distanceError ? (
+                    <Text style={{ color: "#B45309" }}>
+                        Distances unavailable: {distanceError}
+                    </Text>
+                ) : null}
+
+                {activeGroup ? (
+                    <View
                         style={{
-                            padding: 12,
+                            padding: 14,
                             borderRadius: 10,
                             borderWidth: 1,
-                            borderColor: selected ? "#2563EB" : "#E5E7EB",
-                            backgroundColor: selected ? "#EFF6FF" : "#FFFFFF",
-                            gap: 6,
+                            borderColor: "#2563EB",
+                            gap: 10,
                         }}
                     >
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                gap: 8,
-                            }}
-                        >
-                            <Text style={{ fontWeight: "700", flexShrink: 1 }}>
-                                {index + 1}. {group.location.road_name || "Unnamed location"}
-                            </Text>
+                        <Text style={{ fontSize: 18, fontWeight: "700" }}>
+                            Selected destination
+                        </Text>
 
-                            <Text
-                                style={{
-                                    color: delivered ? "#16A34A" : "#166534",
-                                    fontWeight: "600",
-                                }}
-                            >
-                                {delivered
-                                    ? "Completed"
-                                    : deliveredUsers > 0
-                                        ? "Partially delivered"
-                                        : "Pending"}
-                            </Text>
-                        </View>
-
-                        <Text>
-                            {totalUsers} users · {deliveredUsers} delivered
+                        <Text style={{ fontWeight: "600" }}>
+                            {activeGroup.location.road_name || "Unnamed location"}
                         </Text>
 
                         <Text>
-                            {formatDistance(group.distanceMeters)}
-                            {group.durationSeconds != null
-                                ? ` · ${formatDuration(group.durationSeconds)}`
+                            {activeGroup.bookings.length} users
+                        </Text>
+
+                        <Text>
+                            {formatDistance(activeGroup.distanceMeters)}
+                            {activeGroup.durationSeconds != null
+                                ? ` · ${formatDuration(activeGroup.durationSeconds)}`
                                 : ""}
                         </Text>
 
-                        {selected ? (
-                            <Text style={{ color: "#2563EB", fontWeight: "600" }}>
-                                Selected
+                        {activeGroup.bookings.map((booking) => (
+                            <View
+                                key={booking.id}
+                                style={{
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    paddingVertical: 6,
+                                }}
+                            >
+                                <Text>
+                                    {booking.name || booking.username}
+                                </Text>
+
+                                {isDelivered(booking, selectedMeal) ? (
+                                    <Text style={{ color: "#16A34A" }}>
+                                        Delivered
+                                    </Text>
+                                ) : (
+                                    <Pressable
+                                        onPress={() => markDelivered(booking.id)}
+                                        style={{
+                                            backgroundColor: "#2563EB",
+                                            paddingHorizontal: 12,
+                                            paddingVertical: 8,
+                                            borderRadius: 8,
+                                        }}
+                                    >
+                                        <Text style={{ color: "#FFFFFF" }}>
+                                            Mark Delivered
+                                        </Text>
+                                    </Pressable>
+                                )}
+                            </View>
+                        ))}
+                    </View>
+                ) : null}
+
+                <Text style={{ fontSize: 18, fontWeight: "700" }}>
+                    Select a destination
+                </Text>
+
+                {targetUpdating ? (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                        <ActivityIndicator />
+                        <Text>Updating delivery destination…</Text>
+                    </View>
+                ) : null}
+
+                {targetUpdateError ? (
+                    <Text style={{ color: "#DC2626" }}>
+                        {targetUpdateError}
+                    </Text>
+                ) : null}
+
+                {sortedGroups.map((group, index) => {
+                    const delivered = selectedMeal
+                        ? isGroupDelivered(group, selectedMeal)
+                        : false;
+                    const selected = activeGroup?.locationId === group.locationId;
+
+                    const deliveredUsers = selectedMeal
+                        ? getDeliveredCount(group.bookings, selectedMeal)
+                        : 0;
+                    const totalUsers = group.bookings.length;
+
+                    const status = selectedMeal
+                        ? getGroupDeliveryStatus(group, selectedMeal)
+                        : "Pending";
+
+                    return (
+                        <Pressable
+                            key={group.locationId}
+                            onPress={() => handleSelectDestination(group.locationId)}
+                            disabled={targetUpdating}
+                            style={{
+                                padding: 12,
+                                borderRadius: 10,
+                                borderWidth: 1,
+                                borderColor: selected ? "#2563EB" : "#E5E7EB",
+                                backgroundColor: selected ? "#EFF6FF" : "#FFFFFF",
+                                gap: 6,
+                            }}
+                        >
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    gap: 8,
+                                }}
+                            >
+                                <Text style={{ fontWeight: "700", flexShrink: 1 }}>
+                                    {index + 1}. {group.location.road_name || "Unnamed location"}
+                                </Text>
+
+                                <Text
+                                    style={{
+                                        color: delivered ? "#16A34A" : "#166534",
+                                        fontWeight: "600",
+                                    }}
+                                >
+                                    {delivered
+                                        ? "Completed"
+                                        : deliveredUsers > 0
+                                            ? "Partially delivered"
+                                            : "Pending"}
+                                </Text>
+                            </View>
+
+                            <Text>
+                                {totalUsers} users · {deliveredUsers} delivered
                             </Text>
-                        ) : null}
-                    </Pressable>
-                );
-            })}
 
-            {!bookingsLoading &&
-                !bookingsError &&
-                bookings.length === 0 ? (
-                <Text>No bookings found for this meal and date.</Text>
-            ) : null}
+                            <Text>
+                                {formatDistance(group.distanceMeters)}
+                                {group.durationSeconds != null
+                                    ? ` · ${formatDuration(group.durationSeconds)}`
+                                    : ""}
+                            </Text>
 
-            <Pressable
-                onPress={handleEndDelivery}
-                disabled={isEndingDelivery}
-                style={{
-                    backgroundColor: "#DC2626",
-                    padding: 16,
-                    borderRadius: 10,
-                    alignItems: "center",
-                    marginTop: 16,
-                    opacity: isEndingDelivery ? 0.6 : 1,
-                }}
-            >
-                <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                    {isEndingDelivery ? "Ending Delivery..." : "End Delivery"}
-                </Text>
-            </Pressable>
+                            {selected ? (
+                                <Text style={{ color: "#2563EB", fontWeight: "600" }}>
+                                    Selected
+                                </Text>
+                            ) : null}
+                        </Pressable>
+                    );
+                })}
 
-            {endDeliveryError && (
-                <Text style={{ color: "red", marginTop: 8 }}>
-                    {endDeliveryError}
-                </Text>
-            )}
+                {!bookingsLoading &&
+                    !bookingsError &&
+                    bookings.length === 0 ? (
+                    <Text>No bookings found for this meal and date.</Text>
+                ) : null}
+
+                <Pressable
+                    onPress={handleEndDelivery}
+                    disabled={isEndingDelivery}
+                    style={{
+                        backgroundColor: "#DC2626",
+                        padding: 16,
+                        borderRadius: 10,
+                        alignItems: "center",
+                        marginTop: 16,
+                        opacity: isEndingDelivery ? 0.6 : 1,
+                    }}
+                >
+                    <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+                        {isEndingDelivery ? "Ending Delivery..." : "End Delivery"}
+                    </Text>
+                </Pressable>
+
+                {endDeliveryError && (
+                    <Text style={{ color: "red", marginTop: 8 }}>
+                        {endDeliveryError}
+                    </Text>
+                )}
+            </View>
         </ScrollView>
     );
 }
 
 
 const styles = StyleSheet.create({
-    screen: {
+    container: {
         flex: 1,
         backgroundColor: "#F8FAFC",
-        paddingTop: 8,
-    },
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        gap: 12,
-    },
-    backButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 12,
-        backgroundColor: "#FFFFFF",
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
-    },
-    headerText: {
-        flex: 1,
-        gap: 4,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: "#0F172A",
-    },
-    subtitle: {
-        fontSize: 13,
-        color: "#64748B",
-    },
-    mealBadge: {
-        width: 42,
-        height: 42,
-        borderRadius: 12,
-        backgroundColor: "#FEF3C7",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    dinnerBadge: {
-        backgroundColor: "#EDE9FE",
-    },
-    bookingSection: {
-        paddingHorizontal: 16,
-        marginTop: 4,
-    },
-    sectionHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 10,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: "700",
-        color: "#0F172A",
-    },
-    remainingText: {
-        fontSize: 12,
-        color: "#64748B",
-    },
-    bookingList: {
-        height: 210,
-        flexShrink: 0,
-        backgroundColor: "#FFFFFF",
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
-        borderRadius: 14,
-        overflow: "hidden",
-    },
-    listContent: {
-        paddingHorizontal: 12,
-    },
-    bookingRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 12,
-        gap: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: "#F1F5F9",
-    },
-    numberCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: "#DBEAFE",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    deliveredCircle: {
-        backgroundColor: "#16A34A",
-    },
-    numberText: {
-        fontSize: 13,
-        fontWeight: "700",
-        color: "#1D4ED8",
-    },
-    bookingInfo: {
-        flex: 1,
-        gap: 3,
-    },
-    bookingName: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: "#0F172A",
-    },
-    landmark: {
-        fontSize: 12,
-        color: "#64748B",
-    },
-    distance: {
-        fontSize: 11,
-        color: "#64748B",
-    },
-    completedText: {
-        color: "#64748B",
-        textDecorationLine: "line-through",
-    },
-    statusBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 5,
-        borderRadius: 8,
-    },
-    statusDone: {
-        backgroundColor: "#DCFCE7",
-    },
-    statusNext: {
-        backgroundColor: "#DBEAFE",
-    },
-    statusPending: {
-        backgroundColor: "#F1F5F9",
-    },
-    statusText: {
-        fontSize: 10,
-        fontWeight: "600",
-        color: "#64748B",
-    },
-    statusDoneText: {
-        color: "#15803D",
-    },
-    statusNextText: {
-        color: "#1D4ED8",
-    },
-    emptyText: {
-        padding: 20,
-        textAlign: "center",
-        color: "#64748B",
-    },
-    actionSection: {
-        paddingHorizontal: 16,
-        paddingTop: 12,
-        paddingBottom: 12,
-        gap: 10,
-    },
-    nextStop: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-        backgroundColor: "#EFF6FF",
-        borderRadius: 12,
-        padding: 12,
-    },
-    nextStopInfo: {
-        flex: 1,
-        gap: 3,
-    },
-    nextStopLabel: {
-        fontSize: 10,
-        fontWeight: "700",
-        letterSpacing: 0.7,
-        color: "#1D4ED8",
-    },
-    nextStopName: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#0F172A",
-    },
-    deliveredButton: {
-        minHeight: 46,
-        borderRadius: 12,
-        backgroundColor: "#2563EB",
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-    },
-    buttonPressed: {
-        opacity: 0.8,
-    },
-    deliveredButtonText: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: "#FFFFFF",
-    },
-    completedBanner: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        padding: 14,
-        backgroundColor: "#DCFCE7",
-        borderRadius: 12,
-    },
-    completedBannerText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#15803D",
-    },
-    mapContainer: {
-        flex: 1,
-        minHeight: 150,
-        marginHorizontal: 16,
-        marginBottom: 12,
-        backgroundColor: "#FFFFFF",
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
-        overflow: "hidden",
-    },
-    mapHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: "#E2E8F0",
-    },
-    mapTitle: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: "#0F172A",
-    },
-    mapPlaceholder: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
-        backgroundColor: "#F1F5F9",
-        gap: 8,
-    },
-    mapPlaceholderTitle: {
-        fontSize: 15,
-        fontWeight: "600",
-        color: "#334155",
-    },
-    mapPlaceholderText: {
-        fontSize: 12,
-        lineHeight: 18,
-        textAlign: "center",
-        color: "#64748B",
     },
 });
