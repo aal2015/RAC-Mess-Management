@@ -20,6 +20,7 @@ import {
 } from "@/api/tracking";
 
 import ActiveDeliveryMap from "@/components/ActiveDeliveryMap";
+import ScreenHeader from "@/components/ScreenHeader";
 
 type DriverLocation = {
     latitude: number;
@@ -210,159 +211,151 @@ export default function UserTrackingScreen() {
     return (
         <ScrollView
             style={styles.container}
-            contentContainerStyle={styles.content}
+            // contentContainerStyle={styles.content}
         >
             {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerText}>
-                    <Text style={styles.greeting}>
-                        Tracking Delivery
-                    </Text>
+            <ScreenHeader
+                title={"Tracking Delivery"}
+                subtitle={`${user?.username ?? "-"} • ${user?.battalion ?? "-"}`}
+            />
+            <View style={styles.content}>
+                {/* Status Card */}
+                <View style={styles.statusCard}>
+                    <View style={styles.statusHeader}>
+                        <View style={styles.statusTextContainer}>
+                            <Text style={styles.statusTitle}>
+                                {statusTitle}
+                            </Text>
 
-                    <Text style={styles.userInfo}>
-                        {user?.username} • {user?.battalion ?? "-"}
-                    </Text>
-                </View>
+                            <Text style={styles.statusDescription}>
+                                {statusDescription}
+                            </Text>
+                        </View>
 
-                <LogoutButton />
-            </View>
-
-            {/* Status Card */}
-            <View style={styles.statusCard}>
-                <View style={styles.statusHeader}>
-                    <View style={styles.statusTextContainer}>
-                        <Text style={styles.statusTitle}>
-                            {statusTitle}
-                        </Text>
-
-                        <Text style={styles.statusDescription}>
-                            {statusDescription}
-                        </Text>
-                    </View>
-
-                    <View
-                        style={[
-                            styles.statusDot,
-                            { backgroundColor: statusColor },
-                        ]}
-                    />
-                </View>
-
-                <View style={styles.updateRow}>
-                    {loading ? (
-                        <ActivityIndicator
-                            size="small"
-                            color="#2563EB"
+                        <View
+                            style={[
+                                styles.statusDot,
+                                { backgroundColor: statusColor },
+                            ]}
                         />
-                    ) : null}
+                    </View>
 
-                    <Text style={styles.updateText}>
-                        {session ? "Tracking active" : "Not tracking"}
-                    </Text>
+                    <View style={styles.updateRow}>
+                        {loading ? (
+                            <ActivityIndicator
+                                size="small"
+                                color="#2563EB"
+                            />
+                        ) : null}
 
-                    <View style={{ flex: 1 }} />
+                        <Text style={styles.updateText}>
+                            {session ? "Tracking active" : "Not tracking"}
+                        </Text>
 
-                    <Text style={styles.updateText}>
-                        Updated: {formattedTime}
-                    </Text>
+                        <View style={{ flex: 1 }} />
+
+                        <Text style={styles.updateText}>
+                            Updated: {formattedTime}
+                        </Text>
+                    </View>
                 </View>
-            </View>
 
-            {/* Map */}
-            <View style={styles.mapContainer}>
-                {userLocation ? (
-                    <ActiveDeliveryMap
-                        driverLocation={driverLocation}
-                        locations={[
-                            {
-                                id: userLocation.id,
-                                name: userLocation.road_name || "Your location",
-                                username: "Your delivery location",
-                                latitude: userLocation.latitude,
-                                longitude: userLocation.longitude,
-                                road_name: userLocation.road_name,
-                            },
-                        ]}
-                        selectedLocationId={
-                            session?.target_location_id ?? null
-                        }
-                    />
-                ) : locationLoading ? (
-                    <View style={styles.mapPlaceholder}>
-                        <ActivityIndicator
-                            size="large"
-                            color="#2563EB"
+                {/* Map */}
+                <View style={styles.mapContainer}>
+                    {userLocation ? (
+                        <ActiveDeliveryMap
+                            driverLocation={driverLocation}
+                            locations={[
+                                {
+                                    id: userLocation.id,
+                                    name: userLocation.road_name || "Your location",
+                                    username: "Your delivery location",
+                                    latitude: userLocation.latitude,
+                                    longitude: userLocation.longitude,
+                                    road_name: userLocation.road_name,
+                                },
+                            ]}
+                            selectedLocationId={
+                                session?.target_location_id ?? null
+                            }
                         />
-                        <Text style={styles.placeholderText}>
-                            Loading your location...
+                    ) : locationLoading ? (
+                        <View style={styles.mapPlaceholder}>
+                            <ActivityIndicator
+                                size="large"
+                                color="#2563EB"
+                            />
+                            <Text style={styles.placeholderText}>
+                                Loading your location...
+                            </Text>
+                        </View>
+                    ) : (
+                        <View style={styles.mapPlaceholder}>
+                            <Text style={styles.errorText}>
+                                Unable to load your delivery location.
+                            </Text>
+                        </View>
+                    )}
+                </View>
+
+                {/* Delivery Information */}
+                <View style={styles.infoCard}>
+                    <Text style={styles.sectionTitle}>
+                        Delivery Information
+                    </Text>
+
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>
+                            Your location
+                        </Text>
+
+                        <Text style={styles.infoValue}>
+                            {userLocation?.road_name || "Unavailable"}
                         </Text>
                     </View>
-                ) : (
-                    <View style={styles.mapPlaceholder}>
-                        <Text style={styles.errorText}>
-                            Unable to load your delivery location.
+
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>
+                            Bus destination
+                        </Text>
+
+                        <Text style={styles.infoValue}>
+                            {!session
+                                ? "Not available"
+                                : isComingToMe
+                                    ? "Your location"
+                                    : hasTarget
+                                        ? "Another location"
+                                        : "Not selected"}
                         </Text>
                     </View>
+
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>
+                            Driver location
+                        </Text>
+
+                        <Text style={styles.infoValue}>
+                            {driverLocation
+                                ? "Available"
+                                : "Waiting for location"}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Errors */}
+                {error && (
+                    <Text style={styles.errorText}>
+                        {error} Showing the last available location.
+                    </Text>
+                )}
+
+                {locationLoading && (
+                    <Text style={styles.updateText}>
+                        Loading your assigned location...
+                    </Text>
                 )}
             </View>
-
-            {/* Delivery Information */}
-            <View style={styles.infoCard}>
-                <Text style={styles.sectionTitle}>
-                    Delivery Information
-                </Text>
-
-                <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>
-                        Your location
-                    </Text>
-
-                    <Text style={styles.infoValue}>
-                        {userLocation?.road_name || "Unavailable"}
-                    </Text>
-                </View>
-
-                <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>
-                        Bus destination
-                    </Text>
-
-                    <Text style={styles.infoValue}>
-                        {!session
-                            ? "Not available"
-                            : isComingToMe
-                                ? "Your location"
-                                : hasTarget
-                                    ? "Another location"
-                                    : "Not selected"}
-                    </Text>
-                </View>
-
-                <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>
-                        Driver location
-                    </Text>
-
-                    <Text style={styles.infoValue}>
-                        {driverLocation
-                            ? "Available"
-                            : "Waiting for location"}
-                    </Text>
-                </View>
-            </View>
-
-            {/* Errors */}
-            {error && (
-                <Text style={styles.errorText}>
-                    {error} Showing the last available location.
-                </Text>
-            )}
-
-            {locationLoading && (
-                <Text style={styles.updateText}>
-                    Loading your assigned location...
-                </Text>
-            )}
         </ScrollView>
     );
 }
