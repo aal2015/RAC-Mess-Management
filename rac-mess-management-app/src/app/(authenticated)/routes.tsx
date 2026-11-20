@@ -38,6 +38,7 @@ import AssignDriverModal, {
 import AddMessLocationModal, {
     type MessLocationSearchResult,
 } from "@/routes/components/AddMessLocationModal";
+import ScreenHeader from '../../components/ScreenHeader'
 
 import { styles } from "../../user/styles/routes.styles";
 
@@ -379,17 +380,9 @@ export default function RoutesScreen() {
                     styles.contentContainer
                 }
             >
-                <View style={styles.header}>
-                    <View style={styles.headerText}>
-                        <Text style={styles.title}>
-                            Route Management
-                        </Text>
-
-                        <Text style={styles.date}>
-                            Manage users and routes
-                        </Text>
-                    </View>
-                </View>
+                <ScreenHeader
+                    title={"Route Management"}
+                />
 
                 <UsersTable
                     users={users}
