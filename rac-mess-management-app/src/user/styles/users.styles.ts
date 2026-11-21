@@ -94,4 +94,11 @@ export const styles = StyleSheet.create({
     roleColumn: {
         flex: 1,
     },
+
+    center: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#F8FAFC",
+    },
 });

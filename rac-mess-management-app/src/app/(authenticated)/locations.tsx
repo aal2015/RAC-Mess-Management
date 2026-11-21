@@ -21,6 +21,7 @@ import { getBattalionUsersWithLocations } from "@/api/users";
 import DataTable from "@/components/DataTable/DataTable";
 import type { DataTableColumn } from "@/components/DataTable/types";
 import LogoutButton from "../../components/LogoutButton";
+import ScreenHeader from '../../components/ScreenHeader';
 import { styles } from "../../user/styles/users.styles";
 
 export default function LocationsScreen() {
@@ -165,10 +166,7 @@ export default function LocationsScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Location Management</Text>
-        <LogoutButton />
-      </View>
+      <ScreenHeader title="Location Management" />
 
       <View style={styles.content}>
         <Pressable
@@ -268,69 +266,3 @@ export default function LocationsScreen() {
     </ScrollView>
   );
 }
-
-const detailStyles = StyleSheet.create({
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    gap: 10,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#0F2A4A",
-  },
-  subtitle: {
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0F2A4A",
-  },
-  value: {
-    fontSize: 14,
-    color: "#374151",
-  },
-  usersHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  userRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#D1D5DB",
-    gap: 12,
-  },
-  userName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  closeText: {
-    color: "#0F2A4A",
-    fontWeight: "600",
-  },
-
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});

@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { useAuth } from "../../auth/AuthContext";
-import ScreenHeader from '../../components/ScreenHeader'
+import ScreenHeader from '../../components/ScreenHeader';
 import { styles } from "../styles/adminHome.styles";
 
 export default function AdminHomeScreen() {
